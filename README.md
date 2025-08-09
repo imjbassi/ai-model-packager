@@ -49,7 +49,7 @@ capstone5/
 
 ---
 
-## 🛠 Installation & Setup
+## Installation & Setup
 
 ### **1. Clone Repository**
 
