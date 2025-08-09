@@ -86,7 +86,7 @@ docker run --rm my_ai_model:1.0
 
 ---
 
-## 📊 Example Output
+## Example Output
 
 **Building Docker Image**
 
