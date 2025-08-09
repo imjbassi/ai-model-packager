@@ -126,7 +126,7 @@ Red Hat. (2023). *Introduction to containers, Kubernetes, and Red Hat OpenShift*
 
 ## Academic Information
 
-This project was developed as part of **SWE-550: Master’s Capstone in Software Engineering** at **Grand Canyon University**. It demonstrates **software engineering, DevOps integration, and applied machine learning deployment skills**.
+This project was developed as part of **Master’s Capstone in Software Engineering** at **Grand Canyon University**. It demonstrates **software engineering, DevOps integration, and applied machine learning deployment skills**.
 
 ---
 
