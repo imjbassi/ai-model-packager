@@ -63,13 +63,13 @@ def generate_resnet18_model():
         file_size = os.path.getsize(output_path)
         size_mb = file_size / (1024 * 1024)
         
-        print(f"Model saved successfully!")
+        print("Model saved successfully!")
         print(f"File: {output_path}")
         print(f"Size: {size_mb:.1f} MB")
-        print(f"Architecture: ResNet-18 (18 layers)")
-        print(f"Parameters: ~11.7 million")
-        print(f"Input: 224x224 RGB images")
-        print(f"Output: 1000 ImageNet classes")
+        print("Architecture: ResNet-18 (18 layers)")
+        print("Parameters: ~11.7 million")
+        print("Input: 224x224 RGB images")
+        print("Output: 1000 ImageNet classes")
         
         return output_path
         
@@ -78,9 +78,15 @@ def generate_resnet18_model():
         raise RuntimeError(f"Failed to generate ResNet-18 model: {e}") from e
 
 
-if __name__ == "__main__":
+def main():
+    """Main entry point for the script."""
     try:
         generate_resnet18_model()
+        return 0
     except Exception as e:
         print(f"Fatal error: {e}", file=sys.stderr)
-        sys.exit(1)
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

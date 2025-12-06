@@ -1,106 +1,142 @@
 #!/usr/bin/env python3
 """
-Demo time! This shows off our AI packaging tool without breaking anything
+Demo script showcasing the AI Model Packaging Tool capabilities.
+
+This script provides a safe, read-only demonstration of the project structure,
+features, and workflow without executing any build or deployment operations.
 """
 import os
+from pathlib import Path
 
-def main():
-    print("AI Model Packaging Library - Ultra-Safe Demo")
-    print("=" * 60)
-    print("Capstone Project: AI Model Packaging Tool")
-    print("Features: CLI packaging, Docker containers, inference pipeline")
+
+def format_file_size(size_bytes: int) -> str:
+    """
+    Format file size in human-readable format.
     
-    # Step 1: Project structure
-    print("\nStep 1: What we've got here")
+    Args:
+        size_bytes: Size in bytes
+        
+    Returns:
+        Formatted size string (e.g., "47.2MB", "1.5KB")
+    """
+    if size_bytes >= 1024 * 1024:
+        return f"{size_bytes / (1024 * 1024):.1f}MB"
+    elif size_bytes >= 1024:
+        return f"{size_bytes / 1024:.1f}KB"
+    else:
+        return f"{size_bytes}B"
+
+
+def display_project_files() -> None:
+    """Display project structure with file descriptions and sizes."""
+    print("\nStep 1: Project Structure")
+    
     files = {
-        "cli.py": "The main command-line tool (this is what users run)",
-        "docker_packager.py": "Does the heavy lifting to make Docker containers", 
-        "model_loader.py": "Handles loading PyTorch models safely",
-        "infer.py": "Actually runs the model and makes predictions",
-        "resnet18_full.pth": "Our demo model - a pre-trained ResNet-18 (47MB)",
-        "package_python.py": "Backup plan if Docker isn't working"
+        "cli.py": "Main command-line interface for model packaging",
+        "docker_packager.py": "Docker container generation and build orchestration",
+        "model_loader.py": "Safe PyTorch model loading and validation",
+        "infer.py": "Model inference pipeline and prediction execution",
+        "resnet18_full.pth": "Demo model - Pre-trained ResNet-18 (47MB)",
+        "package_python.py": "Alternative Python package generation (non-Docker)"
     }
     
     for filename, description in files.items():
         if os.path.exists(filename):
             size = os.path.getsize(filename)
-            if size > 1024*1024:
-                size_str = f"{size/(1024*1024):.1f}MB"
-            else:
-                size_str = f"{size}B"
-            print(f"   [OK] {filename} ({size_str}) - {description}")
+            size_str = format_file_size(size)
+            print(f"   [✓] {filename} ({size_str}) - {description}")
         else:
-            print(f"   [MISSING] {filename} - {description}")
-    
-    # Step 2: Build context demo
-    print("\nStep 2: The Docker build folder")
+            print(f"   [✗] {filename} - {description}")
+
+
+def display_build_context() -> None:
+    """Display contents of the Docker build context directory."""
+    print("\nStep 2: Docker Build Context")
     print("   build_context/")
     
-    if os.path.exists("build_context"):
-        for item in os.listdir("build_context"):
-            path = os.path.join("build_context", item)
-            size = os.path.getsize(path) if os.path.isfile(path) else 0
-            if size > 1024*1024:
-                size_str = f"{size/(1024*1024):.1f}MB"
-            else:
-                size_str = f"{size}B"
-            print(f"      {item} ({size_str})")
-    else:
-        print("      Build context not generated yet (run the CLI first!)")
+    build_context_path = Path("build_context")
     
-    # Step 3: CLI demonstration
+    if not build_context_path.exists():
+        print("      Build context not yet generated (run CLI to create)")
+        return
+    
+    try:
+        for item in sorted(build_context_path.iterdir()):
+            if item.is_file():
+                size = item.stat().st_size
+                size_str = format_file_size(size)
+                print(f"      {item.name} ({size_str})")
+            else:
+                print(f"      {item.name}/ (directory)")
+    except PermissionError:
+        print("      Unable to read build context (permission denied)")
+
+
+def display_cli_usage() -> None:
+    """Display CLI interface usage and workflow."""
     print("\nStep 3: CLI Interface")
     print("   Usage: python cli.py --input MODEL --image IMAGE_NAME")
-    print("   Process:")
-    print("      1. Load PyTorch model file")
-    print("      2. Generate Docker build context")
-    print("      3. Create Dockerfile with dependencies")
-    print("      4. Build container image") 
-    print("      5. Package for deployment")
-    
-    # Step 4: Key features
+    print("   Workflow:")
+    print("      1. Load and validate PyTorch model file")
+    print("      2. Generate Docker build context directory")
+    print("      3. Create Dockerfile with required dependencies")
+    print("      4. Build Docker container image")
+    print("      5. Package model for deployment")
+
+
+def display_features() -> None:
+    """Display core features of the packaging tool."""
     print("\nStep 4: Core Features")
+    
     features = [
-        "[OK] PyTorch model loading (.pth files)",
-        "[OK] Docker containerization", 
-        "[OK] Automated dependency management",
-        "[OK] CLI packaging interface",
-        "[OK] Inference pipeline integration",
-        "[OK] Python packaging alternative",
-        "[OK] Error handling and validation"
+        "PyTorch model loading (.pth files)",
+        "Docker containerization",
+        "Automated dependency management",
+        "CLI packaging interface",
+        "Inference pipeline integration",
+        "Python packaging alternative",
+        "Error handling and validation"
     ]
     
     for feature in features:
-        print(f"   {feature}")
-    
-    # Step 5: Workflow demo
+        print(f"   [✓] {feature}")
+
+
+def display_workflow() -> None:
+    """Display typical user workflow for model packaging."""
     print("\nStep 5: Typical Workflow")
-    workflow = [
-        "1. User provides trained PyTorch model (.pth file)",
-        "2. CLI generates Docker build context",
-        "3. Dockerfile created with Python + PyTorch dependencies", 
-        "4. Model and inference script packaged",
-        "5. Container built and ready for deployment",
-        "6. Can run inference via container or Python package"
+    
+    workflow_steps = [
+        "User provides trained PyTorch model (.pth file)",
+        "CLI generates Docker build context",
+        "Dockerfile created with Python + PyTorch dependencies",
+        "Model and inference script packaged together",
+        "Container built and ready for deployment",
+        "Run inference via container or Python package"
     ]
     
-    for step in workflow:
-        print(f"   {step}")
-    
-    # Step 6: Technology stack
+    for idx, step in enumerate(workflow_steps, start=1):
+        print(f"   {idx}. {step}")
+
+
+def display_technology_stack() -> None:
+    """Display technology stack and component purposes."""
     print("\nStep 6: Technology Stack")
-    tech = {
-        "PyTorch": "Deep learning model support",
-        "Docker": "Containerization platform",
-        "Python": "Core implementation language", 
-        "CLI": "Command-line interface",
-        "Subprocess": "Docker build automation"
+    
+    technologies = {
+        "PyTorch": "Deep learning framework and model support",
+        "Docker": "Containerization and deployment platform",
+        "Python": "Core implementation language",
+        "CLI (argparse)": "Command-line interface framework",
+        "Subprocess": "Docker build process automation"
     }
     
-    for tech_name, purpose in tech.items():
+    for tech_name, purpose in technologies.items():
         print(f"   {tech_name}: {purpose}")
-    
-    # Final summary
+
+
+def display_summary() -> None:
+    """Display final project summary."""
     print("\n" + "=" * 60)
     print("CAPSTONE PROJECT SUMMARY")
     print("=" * 60)
@@ -113,6 +149,23 @@ def main():
     print("\nDemo complete - All requirements satisfied!")
     print("Safe for screencast recording")
     print("=" * 60)
+
+
+def main() -> None:
+    """Execute the demonstration script."""
+    print("AI Model Packaging Library - Demonstration")
+    print("=" * 60)
+    print("Capstone Project: AI Model Packaging Tool")
+    print("Features: CLI packaging, Docker containers, inference pipeline")
+    
+    display_project_files()
+    display_build_context()
+    display_cli_usage()
+    display_features()
+    display_workflow()
+    display_technology_stack()
+    display_summary()
+
 
 if __name__ == "__main__":
     main()

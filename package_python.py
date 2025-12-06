@@ -106,6 +106,7 @@ import subprocess
 
 
 def main():
+    \"\"\"Install dependencies and run inference.\"\"\"
     print("Installing dependencies...")
     try:
         subprocess.check_call(
@@ -178,7 +179,8 @@ def _create_zip_archive(package_dir: Path, package_name: str) -> str:
     with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
         for file in package_dir.rglob("*"):
             if file.is_file():
-                zipf.write(file, file.relative_to(package_dir))
+                # Use arcname to preserve directory structure within zip
+                zipf.write(file, arcname=file.relative_to(package_dir.parent))
     
     return zip_path
 
