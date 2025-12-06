@@ -25,12 +25,12 @@ This tool solves those problems by offering a **single command** that packages a
 
 ## Key Features
 
-* **Model Auto-Detection**: Supports **PyTorch (.pth)** and **TensorFlow (.h5)** formats.
-* **Automated Dockerization**: Generates Dockerfile, installs dependencies, and packages the model.
-* **Zero Docker Expertise Required**: Ideal for data scientists unfamiliar with containerization.
-* **Cross-Platform Compatibility**: Works on Windows, macOS, and Linux with Docker installed.
-* **Production-Ready Images**: Includes inference script and sample input for testing.
-* **Error Handling & Fallbacks**: Gracefully handles build failures and provides troubleshooting guidance.
+* **Model Auto-Detection**: Supports **PyTorch (.pth)** and **TensorFlow (.h5)** formats
+* **Automated Dockerization**: Generates Dockerfile, installs dependencies, and packages the model
+* **Zero Docker Expertise Required**: Ideal for data scientists unfamiliar with containerization
+* **Cross-Platform Compatibility**: Works on Windows, macOS, and Linux with Docker installed
+* **Production-Ready Images**: Includes inference script and sample input for testing
+* **Error Handling & Fallbacks**: Gracefully handles build failures and provides troubleshooting guidance
 
 ---
 
@@ -55,26 +55,26 @@ ai-model-packager/
 
 ## Installation & Setup
 
-### **Prerequisites**
+### Prerequisites
 
 * Python 3.9 or higher
 * Docker Desktop or Docker Engine installed and running
 * Git (for cloning the repository)
 
-### **1. Clone Repository**
+### 1. Clone Repository
 
 ```bash
 git clone https://github.com/imjbassi/ai-model-packager.git
 cd ai-model-packager
 ```
 
-### **2. Install Dependencies**
+### 2. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### **3. Generate a Sample Model**
+### 3. Generate a Sample Model
 
 ```bash
 python models/gen_real_model.py
@@ -82,13 +82,13 @@ python models/gen_real_model.py
 
 This creates a `resnet18_full.pth` file in the project root directory.
 
-### **4. Package the Model into a Docker Image**
+### 4. Package the Model into a Docker Image
 
 ```bash
 python cli.py --input resnet18_full.pth --image my_ai_model:1.0
 ```
 
-### **5. Run Inference Inside the Container**
+### 5. Run Inference Inside the Container
 
 ```bash
 docker run --rm my_ai_model:1.0
@@ -98,18 +98,18 @@ docker run --rm my_ai_model:1.0
 
 ## Usage
 
-### **Basic Command**
+### Basic Command
 
 ```bash
 python cli.py --input <model_file> --image <image_name:tag>
 ```
 
-### **Arguments**
+### Arguments
 
 * `--input`: Path to the model file (`.pth` for PyTorch or `.h5` for TensorFlow)
 * `--image`: Name and tag for the Docker image (e.g., `my_model:1.0`)
 
-### **Example**
+### Example
 
 ```bash
 python cli.py --input resnet18_full.pth --image resnet_inference:latest
@@ -119,14 +119,14 @@ python cli.py --input resnet18_full.pth --image resnet_inference:latest
 
 ## Example Output
 
-### **Building Docker Image**
+### Building Docker Image
 
 ```
 Building Docker image...
 SUCCESS: Built Docker image: my_ai_model:1.0
 ```
 
-### **Running Inference**
+### Running Inference
 
 ```
 Processing image: sample.jpg
@@ -142,27 +142,27 @@ Top 5 predictions:
 
 ## Security Considerations
 
-* Uses **end-to-end Docker container isolation** to prevent unauthorized access.
-* All dependencies are installed from **trusted package sources** (PyPI).
-* Encourages use of **private container registries** for sensitive or proprietary models.
-* **Recommendation**: Scan Docker images for vulnerabilities using tools like Docker Scout or Trivy before deployment.
+* Uses **end-to-end Docker container isolation** to prevent unauthorized access
+* All dependencies are installed from **trusted package sources** (PyPI)
+* Encourages use of **private container registries** for sensitive or proprietary models
+* **Recommendation**: Scan Docker images for vulnerabilities using tools like Docker Scout or Trivy before deployment
 
 ---
 
 ## Troubleshooting
 
-### **Docker Build Fails**
+### Docker Build Fails
 
 * Ensure Docker is running: `docker ps`
 * Check Docker daemon logs for errors
 * Verify sufficient disk space for image layers
 
-### **Model File Not Found**
+### Model File Not Found
 
 * Confirm the model file path is correct
 * Ensure the model was generated successfully using `gen_real_model.py`
 
-### **Permission Errors**
+### Permission Errors
 
 * On Linux/macOS, you may need to run Docker commands with `sudo` or add your user to the `docker` group
 

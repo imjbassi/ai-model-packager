@@ -23,11 +23,8 @@ def load_model(path):
     if not os.path.exists(path):
         raise FileNotFoundError(f"Model file not found: {path}")
     
-    # Normalize path for consistent extension checking
-    normalized_path = path.lower()
-    
-    # Determine file extension
-    _, ext = os.path.splitext(normalized_path)
+    # Determine file extension (case-insensitive)
+    _, ext = os.path.splitext(path.lower())
     
     # PyTorch formats
     if ext in (".pth", ".pt"):
@@ -47,6 +44,6 @@ def load_model(path):
     
     else:
         raise ValueError(
-            f"Unsupported model format: {path}. "
+            f"Unsupported model format: {ext}. "
             "Supported formats are .pth/.pt (PyTorch) and .h5/.keras (TensorFlow/Keras)."
         )

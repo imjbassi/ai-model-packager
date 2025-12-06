@@ -31,26 +31,16 @@ def generate_resnet18_model():
         
         # Download pre-trained ResNet-18 model (1000 ImageNet classes)
         # Use weights parameter for newer PyTorch versions, fall back to pretrained for older versions
-        try:
-            # PyTorch >= 0.13 uses weights parameter
-            from torchvision.models import ResNet18_Weights
-            model = models.resnet18(weights=ResNet18_Weights.IMAGENET1K_V1)
-        except (ImportError, AttributeError):
-            # Fall back to deprecated pretrained parameter for older PyTorch versions
-            model = models.resnet18(pretrained=True)
+        model = _load_resnet18_model()
         
         # Set model to evaluation mode
         model.eval()
         
         # Determine output path relative to script location
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        output_path = os.path.join(script_dir, "..", "resnet18_full.pth")
-        output_path = os.path.normpath(output_path)
+        output_path = _get_output_path()
         
         # Ensure the output directory exists
-        output_dir = os.path.dirname(output_path)
-        if output_dir and not os.path.exists(output_dir):
-            os.makedirs(output_dir, exist_ok=True)
+        _ensure_output_directory(output_path)
         
         # Save the complete model (architecture + weights)
         torch.save(model, output_path)
@@ -59,23 +49,73 @@ def generate_resnet18_model():
         if not os.path.exists(output_path):
             raise RuntimeError(f"Failed to save model to {output_path}")
         
-        # Calculate and display file size
-        file_size = os.path.getsize(output_path)
-        size_mb = file_size / (1024 * 1024)
-        
-        print("Model saved successfully!")
-        print(f"File: {output_path}")
-        print(f"Size: {size_mb:.1f} MB")
-        print("Architecture: ResNet-18 (18 layers)")
-        print("Parameters: ~11.7 million")
-        print("Input: 224x224 RGB images")
-        print("Output: 1000 ImageNet classes")
+        # Display model information
+        _print_model_info(output_path)
         
         return output_path
         
     except Exception as e:
         print(f"Error generating model: {e}", file=sys.stderr)
         raise RuntimeError(f"Failed to generate ResNet-18 model: {e}") from e
+
+
+def _load_resnet18_model():
+    """
+    Load ResNet-18 model with appropriate method based on PyTorch version.
+    
+    Returns:
+        torch.nn.Module: Loaded ResNet-18 model.
+    """
+    try:
+        # PyTorch >= 0.13 uses weights parameter
+        from torchvision.models import ResNet18_Weights
+        return models.resnet18(weights=ResNet18_Weights.IMAGENET1K_V1)
+    except (ImportError, AttributeError):
+        # Fall back to deprecated pretrained parameter for older PyTorch versions
+        return models.resnet18(pretrained=True)
+
+
+def _get_output_path():
+    """
+    Determine the output path for the saved model.
+    
+    Returns:
+        str: Normalized path to the output file.
+    """
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    output_path = os.path.join(script_dir, "..", "resnet18_full.pth")
+    return os.path.normpath(output_path)
+
+
+def _ensure_output_directory(output_path):
+    """
+    Ensure the output directory exists, creating it if necessary.
+    
+    Args:
+        output_path: Path to the output file.
+    """
+    output_dir = os.path.dirname(output_path)
+    if output_dir and not os.path.exists(output_dir):
+        os.makedirs(output_dir, exist_ok=True)
+
+
+def _print_model_info(output_path):
+    """
+    Print information about the saved model.
+    
+    Args:
+        output_path: Path to the saved model file.
+    """
+    file_size = os.path.getsize(output_path)
+    size_mb = file_size / (1024 * 1024)
+    
+    print("Model saved successfully!")
+    print(f"File: {output_path}")
+    print(f"Size: {size_mb:.1f} MB")
+    print("Architecture: ResNet-18 (18 layers)")
+    print("Parameters: ~11.7 million")
+    print("Input: 224x224 RGB images")
+    print("Output: 1000 ImageNet classes")
 
 
 def main():
