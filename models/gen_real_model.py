@@ -6,6 +6,7 @@ This script downloads a pre-trained ResNet-18 model from PyTorch Hub
 and saves it to disk for use in packaging demonstrations.
 """
 import os
+import sys
 import torch
 import torchvision.models as models
 
@@ -24,37 +25,62 @@ def generate_resnet18_model():
     Raises:
         RuntimeError: If model download or save operation fails.
     """
-    print("Generating pre-trained ResNet-18 model...")
-    print("Downloading model weights from PyTorch Hub...")
-    
-    # Download pre-trained ResNet-18 model (1000 ImageNet classes)
-    # Note: 'pretrained' parameter is deprecated in newer PyTorch versions
-    # but maintained here for backwards compatibility
-    model = models.resnet18(pretrained=True)
-    model.eval()
-    
-    # Determine output path relative to script location
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    output_path = os.path.join(script_dir, "..", "resnet18_full.pth")
-    output_path = os.path.normpath(output_path)
-    
-    # Save the complete model (architecture + weights)
-    torch.save(model, output_path)
-    
-    # Calculate and display file size
-    file_size = os.path.getsize(output_path)
-    size_mb = file_size / (1024 * 1024)
-    
-    print(f"Model saved successfully!")
-    print(f"File: {output_path}")
-    print(f"Size: {size_mb:.1f} MB")
-    print(f"Architecture: ResNet-18 (18 layers)")
-    print(f"Parameters: ~11.7 million")
-    print(f"Input: 224x224 RGB images")
-    print(f"Output: 1000 ImageNet classes")
-    
-    return output_path
+    try:
+        print("Generating pre-trained ResNet-18 model...")
+        print("Downloading model weights from PyTorch Hub...")
+        
+        # Download pre-trained ResNet-18 model (1000 ImageNet classes)
+        # Use weights parameter for newer PyTorch versions, fall back to pretrained for older versions
+        try:
+            # PyTorch >= 0.13 uses weights parameter
+            from torchvision.models import ResNet18_Weights
+            model = models.resnet18(weights=ResNet18_Weights.IMAGENET1K_V1)
+        except (ImportError, AttributeError):
+            # Fall back to deprecated pretrained parameter for older PyTorch versions
+            model = models.resnet18(pretrained=True)
+        
+        # Set model to evaluation mode
+        model.eval()
+        
+        # Determine output path relative to script location
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        output_path = os.path.join(script_dir, "..", "resnet18_full.pth")
+        output_path = os.path.normpath(output_path)
+        
+        # Ensure the output directory exists
+        output_dir = os.path.dirname(output_path)
+        if output_dir and not os.path.exists(output_dir):
+            os.makedirs(output_dir, exist_ok=True)
+        
+        # Save the complete model (architecture + weights)
+        torch.save(model, output_path)
+        
+        # Verify the file was created successfully
+        if not os.path.exists(output_path):
+            raise RuntimeError(f"Failed to save model to {output_path}")
+        
+        # Calculate and display file size
+        file_size = os.path.getsize(output_path)
+        size_mb = file_size / (1024 * 1024)
+        
+        print(f"Model saved successfully!")
+        print(f"File: {output_path}")
+        print(f"Size: {size_mb:.1f} MB")
+        print(f"Architecture: ResNet-18 (18 layers)")
+        print(f"Parameters: ~11.7 million")
+        print(f"Input: 224x224 RGB images")
+        print(f"Output: 1000 ImageNet classes")
+        
+        return output_path
+        
+    except Exception as e:
+        print(f"Error generating model: {e}", file=sys.stderr)
+        raise RuntimeError(f"Failed to generate ResNet-18 model: {e}") from e
 
 
 if __name__ == "__main__":
-    generate_resnet18_model()
+    try:
+        generate_resnet18_model()
+    except Exception as e:
+        print(f"Fatal error: {e}", file=sys.stderr)
+        sys.exit(1)

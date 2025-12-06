@@ -1,19 +1,32 @@
 import argparse
-import sys
 import os
+import sys
+
 
 def run_pytorch_inference(model_path: str, input_image: str = None):
+    """
+    Run inference using a PyTorch model.
+    
+    Args:
+        model_path: Path to the PyTorch model file (.pth)
+        input_image: Optional path to an input image. If not provided, uses dummy data.
+    
+    Returns:
+        Model output tensor
+    """
     import torch
     import torchvision.transforms as transforms
     from PIL import Image
-    import numpy as np
     
+    # Load model and set to evaluation mode
     model = torch.load(model_path, map_location=torch.device("cpu"), weights_only=False)
     model.eval()
     
+    # Prepare input tensor
     if input_image and os.path.exists(input_image):
-        # Let's process a real image
         print(f"Processing image: {input_image}")
+        
+        # Standard ImageNet preprocessing pipeline
         transform = transforms.Compose([
             transforms.Resize(256),
             transforms.CenterCrop(224),
@@ -24,18 +37,18 @@ def run_pytorch_inference(model_path: str, input_image: str = None):
         image = Image.open(input_image).convert('RGB')
         input_tensor = transform(image).unsqueeze(0)
     else:
-        # No image? No problem - we'll make one up for testing
-        print("Using dummy input tensor")
+        print("Using dummy input tensor (no image provided)")
         input_tensor = torch.randn(1, 3, 224, 224)
     
+    # Run inference
     with torch.no_grad():
         outputs = model(input_tensor)
         probabilities = torch.nn.functional.softmax(outputs, dim=1)
         
-        # Let's see what the model thinks (top 5 guesses)
+        # Display top 5 predictions
         top5_prob, top5_indices = torch.topk(probabilities, 5)
         
-        print("Top 5 predictions:")
+        print("\nTop 5 predictions:")
         for i in range(5):
             idx = top5_indices[0][i].item()
             prob = top5_prob[0][i].item()
@@ -43,27 +56,61 @@ def run_pytorch_inference(model_path: str, input_image: str = None):
     
     return outputs
 
+
 def run_tensorflow_inference(model_path: str):
-    import tensorflow as tf
-    model = tf.keras.models.load_model(model_path)
+    """
+    Run inference using a TensorFlow/Keras model.
+    
+    Args:
+        model_path: Path to the TensorFlow model file (.h5)
+    """
     import numpy as np
-    dummy = np.random.randn(1, 224, 224, 3).astype(np.float32)
-    out = model(dummy)
-    print("TensorFlow inference output:", out.numpy())
+    import tensorflow as tf
+    
+    # Load model
+    model = tf.keras.models.load_model(model_path)
+    
+    # Create dummy input (batch_size=1, height=224, width=224, channels=3)
+    dummy_input = np.random.randn(1, 224, 224, 3).astype(np.float32)
+    
+    # Run inference
+    output = model(dummy_input)
+    print("TensorFlow inference output shape:", output.shape)
+    print("TensorFlow inference output:", output.numpy())
+
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--model", required=True, help="Path to model file")
-    parser.add_argument("--test-input", help="Path to input image for testing")
+    """Main entry point for the inference script."""
+    parser = argparse.ArgumentParser(
+        description="Run inference on PyTorch or TensorFlow models"
+    )
+    parser.add_argument(
+        "--model",
+        required=True,
+        help="Path to model file (.pth for PyTorch, .h5 for TensorFlow)"
+    )
+    parser.add_argument(
+        "--test-input",
+        help="Path to input image for testing (PyTorch only)"
+    )
     args = parser.parse_args()
     
-    path = args.model
-    if path.endswith(".pth"):
-        run_pytorch_inference(path, args.test_input)
-    elif path.endswith(".h5"):
-        run_tensorflow_inference(path)
+    model_path = args.model
+    
+    # Validate model file exists
+    if not os.path.exists(model_path):
+        sys.exit(f"Error: Model file not found: {model_path}")
+    
+    # Route to appropriate inference function based on file extension
+    if model_path.endswith(".pth"):
+        run_pytorch_inference(model_path, args.test_input)
+    elif model_path.endswith(".h5"):
+        if args.test_input:
+            print("Warning: --test-input is only supported for PyTorch models")
+        run_tensorflow_inference(model_path)
     else:
-        sys.exit("Unsupported model format")
+        sys.exit(f"Error: Unsupported model format. Expected .pth or .h5, got: {model_path}")
+
 
 if __name__ == "__main__":
     main()

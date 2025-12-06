@@ -1,6 +1,7 @@
 ```python
 import argparse
 import shutil
+import sys
 import zipfile
 from pathlib import Path
 from typing import Optional
@@ -198,11 +199,14 @@ def _print_usage_instructions(zip_path: str, package_dir: Path) -> None:
     print(f"   3. Or double-click: run.bat (Windows)")
 
 
-def main() -> None:
+def main() -> int:
     """
     Main entry point for the package creation script.
     
     Parses command-line arguments and creates a portable Python package.
+    
+    Returns:
+        Exit code (0 for success, 1 for failure)
     """
     parser = argparse.ArgumentParser(
         description="Create portable Python package for model deployment (alternative to Docker)",
@@ -236,6 +240,5 @@ Examples:
 
 
 if __name__ == "__main__":
-    import sys
     sys.exit(main())
 ```
