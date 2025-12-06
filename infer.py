@@ -19,8 +19,11 @@ def run_pytorch_inference(model_path: str, input_image: str = None):
     from PIL import Image
     
     # Load model and set to evaluation mode
-    model = torch.load(model_path, map_location=torch.device("cpu"), weights_only=False)
-    model.eval()
+    try:
+        model = torch.load(model_path, map_location=torch.device("cpu"), weights_only=False)
+        model.eval()
+    except Exception as e:
+        sys.exit(f"Error loading PyTorch model: {e}")
     
     # Prepare input tensor
     if input_image and os.path.exists(input_image):
@@ -34,49 +37,64 @@ def run_pytorch_inference(model_path: str, input_image: str = None):
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
         
-        image = Image.open(input_image).convert('RGB')
-        input_tensor = transform(image).unsqueeze(0)
+        try:
+            image = Image.open(input_image).convert('RGB')
+            input_tensor = transform(image).unsqueeze(0)
+        except Exception as e:
+            sys.exit(f"Error processing image: {e}")
     else:
+        if input_image:
+            print(f"Warning: Image file not found: {input_image}")
         print("Using dummy input tensor (no image provided)")
         input_tensor = torch.randn(1, 3, 224, 224)
     
     # Run inference
-    with torch.no_grad():
-        outputs = model(input_tensor)
-        probabilities = torch.nn.functional.softmax(outputs, dim=1)
-        
-        # Display top 5 predictions
-        top5_prob, top5_indices = torch.topk(probabilities, 5)
-        
-        print("\nTop 5 predictions:")
-        for i in range(5):
-            idx = top5_indices[0][i].item()
-            prob = top5_prob[0][i].item()
-            print(f"   {i+1}. Class {idx}: {prob:.4f} ({prob*100:.1f}%)")
+    try:
+        with torch.no_grad():
+            outputs = model(input_tensor)
+            probabilities = torch.nn.functional.softmax(outputs, dim=1)
+            
+            # Display top 5 predictions
+            top5_prob, top5_indices = torch.topk(probabilities, 5)
+            
+            print("\nTop 5 predictions:")
+            for i in range(5):
+                idx = top5_indices[0][i].item()
+                prob = top5_prob[0][i].item()
+                print(f"   {i+1}. Class {idx}: {prob:.4f} ({prob*100:.1f}%)")
+    except Exception as e:
+        sys.exit(f"Error during inference: {e}")
     
     return outputs
 
 
-def run_tensorflow_inference(model_path: str):
+def run_tensorflow_inference(model_path: str, input_image: str = None):
     """
     Run inference using a TensorFlow/Keras model.
     
     Args:
         model_path: Path to the TensorFlow model file (.h5)
+        input_image: Optional path to an input image (currently unused, for future enhancement)
     """
     import numpy as np
     import tensorflow as tf
     
     # Load model
-    model = tf.keras.models.load_model(model_path)
+    try:
+        model = tf.keras.models.load_model(model_path)
+    except Exception as e:
+        sys.exit(f"Error loading TensorFlow model: {e}")
     
     # Create dummy input (batch_size=1, height=224, width=224, channels=3)
     dummy_input = np.random.randn(1, 224, 224, 3).astype(np.float32)
     
     # Run inference
-    output = model(dummy_input)
-    print("TensorFlow inference output shape:", output.shape)
-    print("TensorFlow inference output:", output.numpy())
+    try:
+        output = model(dummy_input)
+        print("TensorFlow inference output shape:", output.shape)
+        print("TensorFlow inference output:", output.numpy())
+    except Exception as e:
+        sys.exit(f"Error during inference: {e}")
 
 
 def main():
@@ -107,7 +125,7 @@ def main():
     elif model_path.endswith(".h5"):
         if args.test_input:
             print("Warning: --test-input is only supported for PyTorch models")
-        run_tensorflow_inference(model_path)
+        run_tensorflow_inference(model_path, args.test_input)
     else:
         sys.exit(f"Error: Unsupported model format. Expected .pth or .h5, got: {model_path}")
 
