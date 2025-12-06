@@ -1,3 +1,4 @@
+```python
 import os
 import torch
 import tensorflow as tf
@@ -24,7 +25,8 @@ def load_model(path):
         raise FileNotFoundError(f"Model file not found: {path}")
     
     # Determine file extension (case-insensitive)
-    _, ext = os.path.splitext(path.lower())
+    _, ext = os.path.splitext(path)
+    ext = ext.lower()
     
     # PyTorch formats
     if ext in (".pth", ".pt"):
@@ -47,3 +49,4 @@ def load_model(path):
             f"Unsupported model format: {ext}. "
             "Supported formats are .pth/.pt (PyTorch) and .h5/.keras (TensorFlow/Keras)."
         )
+```
