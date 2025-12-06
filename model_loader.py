@@ -7,7 +7,7 @@ def load_model(path):
     """
     Load an AI model from the given path.
     
-    Supports PyTorch (.pth) and TensorFlow (.h5) model formats.
+    Supports PyTorch (.pth, .pt) and TensorFlow (.h5, .keras) model formats.
     PyTorch models are loaded in evaluation mode on CPU by default.
     
     Args:
@@ -26,18 +26,27 @@ def load_model(path):
     # Normalize path for consistent extension checking
     normalized_path = path.lower()
     
-    if normalized_path.endswith(".pth"):
+    # Determine file extension
+    _, ext = os.path.splitext(normalized_path)
+    
+    # PyTorch formats
+    if ext in (".pth", ".pt"):
         # Load PyTorch model on CPU and set to evaluation mode
-        model = torch.load(path, map_location=torch.device("cpu"))
-        if hasattr(model, 'eval'):
+        # Using weights_only=False for backward compatibility, but consider
+        # setting to True for security if loading trusted models only
+        model = torch.load(path, map_location=torch.device("cpu"), weights_only=False)
+        if hasattr(model, "eval"):
             model.eval()
         return model
-    elif normalized_path.endswith(".h5"):
+    
+    # TensorFlow/Keras formats
+    elif ext in (".h5", ".keras"):
         # Load TensorFlow/Keras model
         model = tf.keras.models.load_model(path)
         return model
+    
     else:
         raise ValueError(
             f"Unsupported model format: {path}. "
-            "Supported formats are .pth (PyTorch) and .h5 (TensorFlow/Keras)."
+            "Supported formats are .pth/.pt (PyTorch) and .h5/.keras (TensorFlow/Keras)."
         )
