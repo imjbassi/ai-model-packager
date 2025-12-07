@@ -7,6 +7,7 @@ features, and workflow without executing any build or deployment operations.
 """
 import os
 from pathlib import Path
+from typing import Dict, List
 
 
 def format_file_size(size_bytes: int) -> str:
@@ -23,15 +24,14 @@ def format_file_size(size_bytes: int) -> str:
         return f"{size_bytes / (1024 * 1024):.1f}MB"
     elif size_bytes >= 1024:
         return f"{size_bytes / 1024:.1f}KB"
-    else:
-        return f"{size_bytes}B"
+    return f"{size_bytes}B"
 
 
 def display_project_files() -> None:
     """Display project structure with file descriptions and sizes."""
     print("\nStep 1: Project Structure")
     
-    files = {
+    files: Dict[str, str] = {
         "cli.py": "Main command-line interface for model packaging",
         "docker_packager.py": "Docker container generation and build orchestration",
         "model_loader.py": "Safe PyTorch model loading and validation",
@@ -77,18 +77,24 @@ def display_cli_usage() -> None:
     print("\nStep 3: CLI Interface")
     print("   Usage: python cli.py --input MODEL --image IMAGE_NAME")
     print("   Workflow:")
-    print("      1. Load and validate PyTorch model file")
-    print("      2. Generate Docker build context directory")
-    print("      3. Create Dockerfile with required dependencies")
-    print("      4. Build Docker container image")
-    print("      5. Package model for deployment")
+    
+    workflow_steps: List[str] = [
+        "Load and validate PyTorch model file",
+        "Generate Docker build context directory",
+        "Create Dockerfile with required dependencies",
+        "Build Docker container image",
+        "Package model for deployment"
+    ]
+    
+    for idx, step in enumerate(workflow_steps, start=1):
+        print(f"      {idx}. {step}")
 
 
 def display_features() -> None:
     """Display core features of the packaging tool."""
     print("\nStep 4: Core Features")
     
-    features = [
+    features: List[str] = [
         "PyTorch model loading (.pth files)",
         "Docker containerization",
         "Automated dependency management",
@@ -106,7 +112,7 @@ def display_workflow() -> None:
     """Display typical user workflow for model packaging."""
     print("\nStep 5: Typical Workflow")
     
-    workflow_steps = [
+    workflow_steps: List[str] = [
         "User provides trained PyTorch model (.pth file)",
         "CLI generates Docker build context",
         "Dockerfile created with Python + PyTorch dependencies",
@@ -123,7 +129,7 @@ def display_technology_stack() -> None:
     """Display technology stack and component purposes."""
     print("\nStep 6: Technology Stack")
     
-    technologies = {
+    technologies: Dict[str, str] = {
         "PyTorch": "Deep learning framework and model support",
         "Docker": "Containerization and deployment platform",
         "Python": "Core implementation language",
@@ -137,9 +143,11 @@ def display_technology_stack() -> None:
 
 def display_summary() -> None:
     """Display final project summary."""
-    print("\n" + "=" * 60)
+    separator = "=" * 60
+    
+    print(f"\n{separator}")
     print("CAPSTONE PROJECT SUMMARY")
-    print("=" * 60)
+    print(separator)
     print("Project: AI Model Packaging Library")
     print("Goal: Automate ML model containerization")
     print("Status: Fully functional with CLI interface")
@@ -148,13 +156,15 @@ def display_summary() -> None:
     print("Benefit: Simplified ML model deployment")
     print("\nDemo complete - All requirements satisfied!")
     print("Safe for screencast recording")
-    print("=" * 60)
+    print(separator)
 
 
 def main() -> None:
     """Execute the demonstration script."""
+    separator = "=" * 60
+    
     print("AI Model Packaging Library - Demonstration")
-    print("=" * 60)
+    print(separator)
     print("Capstone Project: AI Model Packaging Tool")
     print("Features: CLI packaging, Docker containers, inference pipeline")
     

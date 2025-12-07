@@ -1,3 +1,4 @@
+```python
 import argparse
 import os
 import sys
@@ -74,7 +75,8 @@ def run_tensorflow_inference(model_path: str, input_image: str = None):
     
     Args:
         model_path: Path to the TensorFlow model file (.h5)
-        input_image: Optional path to an input image (currently unused, for future enhancement)
+        input_image: Optional path to an input image. If provided, uses the image;
+                     otherwise uses dummy data.
     """
     import numpy as np
     import tensorflow as tf
@@ -85,14 +87,46 @@ def run_tensorflow_inference(model_path: str, input_image: str = None):
     except Exception as e:
         sys.exit(f"Error loading TensorFlow model: {e}")
     
-    # Create dummy input (batch_size=1, height=224, width=224, channels=3)
-    dummy_input = np.random.randn(1, 224, 224, 3).astype(np.float32)
+    # Prepare input
+    if input_image and os.path.exists(input_image):
+        print(f"Processing image: {input_image}")
+        try:
+            from PIL import Image
+            
+            # Load and preprocess image
+            image = Image.open(input_image).convert('RGB')
+            image = image.resize((224, 224))
+            input_data = np.array(image).astype(np.float32)
+            
+            # Normalize to [0, 1] range
+            input_data = input_data / 255.0
+            
+            # Add batch dimension
+            input_data = np.expand_dims(input_data, axis=0)
+        except Exception as e:
+            sys.exit(f"Error processing image: {e}")
+    else:
+        if input_image:
+            print(f"Warning: Image file not found: {input_image}")
+        print("Using dummy input tensor (no image provided)")
+        # Create dummy input (batch_size=1, height=224, width=224, channels=3)
+        input_data = np.random.randn(1, 224, 224, 3).astype(np.float32)
     
     # Run inference
     try:
-        output = model(dummy_input)
-        print("TensorFlow inference output shape:", output.shape)
+        output = model(input_data)
+        print("\nTensorFlow inference output shape:", output.shape)
         print("TensorFlow inference output:", output.numpy())
+        
+        # If output looks like classification probabilities, show top predictions
+        if len(output.shape) == 2 and output.shape[0] == 1:
+            probabilities = tf.nn.softmax(output, axis=1).numpy()[0]
+            top5_indices = np.argsort(probabilities)[-5:][::-1]
+            
+            print("\nTop 5 predictions:")
+            for i, idx in enumerate(top5_indices):
+                prob = probabilities[idx]
+                print(f"   {i+1}. Class {idx}: {prob:.4f} ({prob*100:.1f}%)")
     except Exception as e:
         sys.exit(f"Error during inference: {e}")
 
@@ -109,7 +143,7 @@ def main():
     )
     parser.add_argument(
         "--test-input",
-        help="Path to input image for testing (PyTorch only)"
+        help="Path to input image for testing"
     )
     args = parser.parse_args()
     
@@ -123,8 +157,6 @@ def main():
     if model_path.endswith(".pth"):
         run_pytorch_inference(model_path, args.test_input)
     elif model_path.endswith(".h5"):
-        if args.test_input:
-            print("Warning: --test-input is only supported for PyTorch models")
         run_tensorflow_inference(model_path, args.test_input)
     else:
         sys.exit(f"Error: Unsupported model format. Expected .pth or .h5, got: {model_path}")
@@ -132,3 +164,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+```
