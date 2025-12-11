@@ -4,7 +4,6 @@ import shutil
 import sys
 import zipfile
 from pathlib import Path
-from typing import Optional
 
 
 def create_python_package(model_path: str, package_name: str) -> None:
@@ -179,7 +178,7 @@ def _create_zip_archive(package_dir: Path, package_name: str) -> str:
     with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
         for file in package_dir.rglob("*"):
             if file.is_file():
-                # Use arcname to preserve directory structure within zip
+                # Preserve directory structure within zip relative to package_dir
                 zipf.write(file, arcname=file.relative_to(package_dir.parent))
     
     return zip_path

@@ -30,7 +30,6 @@ def generate_resnet18_model():
         print("Downloading model weights from PyTorch Hub...")
         
         # Download pre-trained ResNet-18 model (1000 ImageNet classes)
-        # Use weights parameter for newer PyTorch versions, fall back to pretrained for older versions
         model = _load_resnet18_model()
         
         # Set model to evaluation mode
@@ -123,8 +122,7 @@ def main():
     try:
         generate_resnet18_model()
         return 0
-    except Exception as e:
-        print(f"Fatal error: {e}", file=sys.stderr)
+    except Exception:
         return 1
 
 

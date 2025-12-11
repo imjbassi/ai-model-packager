@@ -20,6 +20,9 @@ def format_file_size(size_bytes: int) -> str:
     Returns:
         Formatted size string (e.g., "47.2MB", "1.5KB")
     """
+    if size_bytes < 0:
+        return "0B"
+    
     if size_bytes >= 1024 * 1024:
         return f"{size_bytes / (1024 * 1024):.1f}MB"
     elif size_bytes >= 1024:
@@ -42,9 +45,12 @@ def display_project_files() -> None:
     
     for filename, description in files.items():
         if os.path.exists(filename):
-            size = os.path.getsize(filename)
-            size_str = format_file_size(size)
-            print(f"   [✓] {filename} ({size_str}) - {description}")
+            try:
+                size = os.path.getsize(filename)
+                size_str = format_file_size(size)
+                print(f"   [✓] {filename} ({size_str}) - {description}")
+            except OSError:
+                print(f"   [✓] {filename} (size unavailable) - {description}")
         else:
             print(f"   [✗] {filename} - {description}")
 
@@ -61,15 +67,25 @@ def display_build_context() -> None:
         return
     
     try:
-        for item in sorted(build_context_path.iterdir()):
+        items = sorted(build_context_path.iterdir())
+        if not items:
+            print("      (empty directory)")
+            return
+            
+        for item in items:
             if item.is_file():
-                size = item.stat().st_size
-                size_str = format_file_size(size)
-                print(f"      {item.name} ({size_str})")
-            else:
+                try:
+                    size = item.stat().st_size
+                    size_str = format_file_size(size)
+                    print(f"      {item.name} ({size_str})")
+                except OSError:
+                    print(f"      {item.name} (size unavailable)")
+            elif item.is_dir():
                 print(f"      {item.name}/ (directory)")
     except PermissionError:
         print("      Unable to read build context (permission denied)")
+    except OSError as e:
+        print(f"      Error reading build context: {e}")
 
 
 def display_cli_usage() -> None:
