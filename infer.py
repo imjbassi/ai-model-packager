@@ -24,7 +24,8 @@ def run_pytorch_inference(model_path: str, input_image: str = None):
         model = torch.load(model_path, map_location=torch.device("cpu"), weights_only=False)
         model.eval()
     except Exception as e:
-        sys.exit(f"Error loading PyTorch model: {e}")
+        print(f"Error loading PyTorch model: {e}", file=sys.stderr)
+        sys.exit(1)
     
     # Prepare input tensor
     if input_image and os.path.exists(input_image):
@@ -42,10 +43,11 @@ def run_pytorch_inference(model_path: str, input_image: str = None):
             image = Image.open(input_image).convert('RGB')
             input_tensor = transform(image).unsqueeze(0)
         except Exception as e:
-            sys.exit(f"Error processing image: {e}")
+            print(f"Error processing image: {e}", file=sys.stderr)
+            sys.exit(1)
     else:
         if input_image:
-            print(f"Warning: Image file not found: {input_image}")
+            print(f"Warning: Image file not found: {input_image}", file=sys.stderr)
         print("Using dummy input tensor (no image provided)")
         input_tensor = torch.randn(1, 3, 224, 224)
     
@@ -64,7 +66,8 @@ def run_pytorch_inference(model_path: str, input_image: str = None):
                 prob = top5_prob[0][i].item()
                 print(f"   {i+1}. Class {idx}: {prob:.4f} ({prob*100:.1f}%)")
     except Exception as e:
-        sys.exit(f"Error during inference: {e}")
+        print(f"Error during inference: {e}", file=sys.stderr)
+        sys.exit(1)
     
     return outputs
 
@@ -85,7 +88,8 @@ def run_tensorflow_inference(model_path: str, input_image: str = None):
     try:
         model = tf.keras.models.load_model(model_path)
     except Exception as e:
-        sys.exit(f"Error loading TensorFlow model: {e}")
+        print(f"Error loading TensorFlow model: {e}", file=sys.stderr)
+        sys.exit(1)
     
     # Prepare input
     if input_image and os.path.exists(input_image):
@@ -104,10 +108,11 @@ def run_tensorflow_inference(model_path: str, input_image: str = None):
             # Add batch dimension
             input_data = np.expand_dims(input_data, axis=0)
         except Exception as e:
-            sys.exit(f"Error processing image: {e}")
+            print(f"Error processing image: {e}", file=sys.stderr)
+            sys.exit(1)
     else:
         if input_image:
-            print(f"Warning: Image file not found: {input_image}")
+            print(f"Warning: Image file not found: {input_image}", file=sys.stderr)
         print("Using dummy input tensor (no image provided)")
         # Create dummy input (batch_size=1, height=224, width=224, channels=3)
         input_data = np.random.randn(1, 224, 224, 3).astype(np.float32)
@@ -128,7 +133,8 @@ def run_tensorflow_inference(model_path: str, input_image: str = None):
                 prob = probabilities[idx]
                 print(f"   {i+1}. Class {idx}: {prob:.4f} ({prob*100:.1f}%)")
     except Exception as e:
-        sys.exit(f"Error during inference: {e}")
+        print(f"Error during inference: {e}", file=sys.stderr)
+        sys.exit(1)
 
 
 def main():
@@ -151,7 +157,8 @@ def main():
     
     # Validate model file exists
     if not os.path.exists(model_path):
-        sys.exit(f"Error: Model file not found: {model_path}")
+        print(f"Error: Model file not found: {model_path}", file=sys.stderr)
+        sys.exit(1)
     
     # Route to appropriate inference function based on file extension
     if model_path.endswith(".pth"):
@@ -159,7 +166,8 @@ def main():
     elif model_path.endswith(".h5"):
         run_tensorflow_inference(model_path, args.test_input)
     else:
-        sys.exit(f"Error: Unsupported model format. Expected .pth or .h5, got: {model_path}")
+        print(f"Error: Unsupported model format. Expected .pth or .h5, got: {model_path}", file=sys.stderr)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
