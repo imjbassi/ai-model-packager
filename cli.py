@@ -1,3 +1,4 @@
+```python
 import argparse
 import sys
 from docker_packager import package_model
@@ -42,6 +43,9 @@ Examples:
     try:
         package_model(args.input, args.image)
         return 0
+    except KeyboardInterrupt:
+        print("\nOperation cancelled by user", file=sys.stderr)
+        return 130
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         return 1
@@ -49,3 +53,4 @@ Examples:
 
 if __name__ == "__main__":
     sys.exit(main())
+```
