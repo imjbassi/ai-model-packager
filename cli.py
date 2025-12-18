@@ -12,7 +12,7 @@ def main():
     to containerize a machine learning model.
     
     Returns:
-        int: Exit code (0 for success, non-zero for failure)
+        int: Exit code (0 for success, 130 for user cancellation, 1 for errors)
     """
     parser = argparse.ArgumentParser(
         description="Package ML models into Docker containers for easy deployment",

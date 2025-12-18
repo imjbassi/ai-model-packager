@@ -72,10 +72,21 @@ def _create_sample_image(sample_path):
             check=True,
             timeout=10
         )
-    except Exception:
-        # Create a placeholder file if PIL is not available
-        with open(sample_path, 'w') as f:
-            f.write("# Placeholder image file")
+    except subprocess.TimeoutExpired:
+        print("WARNING: Sample image creation timed out")
+        _create_placeholder_image(sample_path)
+    except subprocess.CalledProcessError:
+        print("WARNING: PIL not available, creating placeholder")
+        _create_placeholder_image(sample_path)
+    except Exception as e:
+        print(f"WARNING: Failed to create sample image: {e}")
+        _create_placeholder_image(sample_path)
+
+
+def _create_placeholder_image(sample_path):
+    """Create a placeholder file when PIL is unavailable."""
+    with open(sample_path, 'w') as f:
+        f.write("# Placeholder image file\n")
 
 
 def _verify_docker_image(image_name):
@@ -99,6 +110,9 @@ def _verify_docker_image(image_name):
         else:
             print("WARNING: Build succeeded but image verification failed")
             return True
+    except subprocess.TimeoutExpired:
+        print("WARNING: Image verification timed out")
+        return True
     except Exception as e:
         print(f"WARNING: Image verification failed: {e}")
         return True
@@ -121,6 +135,9 @@ def _fallback_to_python_package(model_path, image_name):
     except ImportError:
         print("ERROR: Python packaging fallback not available")
         return False
+    except Exception as e:
+        print(f"ERROR: Python packaging failed: {e}")
+        return False
 
 
 def package_model(model_path, image_name):
@@ -141,29 +158,55 @@ def package_model(model_path, image_name):
     Returns:
         bool: True if packaging succeeded, False otherwise
     """
+    # Validate inputs
+    if not os.path.exists(model_path):
+        print(f"ERROR: Model file not found: {model_path}")
+        return False
+    
+    if not image_name or not isinstance(image_name, str):
+        print("ERROR: Invalid image name provided")
+        return False
+    
     # Check Docker availability first
     if not check_docker_available():
         return _fallback_to_python_package(model_path, image_name)
     
     model_filename = os.path.basename(model_path)
     ctx = Path("build_context")
-    ctx.mkdir(exist_ok=True)
+    
+    try:
+        ctx.mkdir(exist_ok=True)
+    except Exception as e:
+        print(f"ERROR: Failed to create build context directory: {e}")
+        return False
 
     print(f"Creating Docker build context in: {ctx}")
 
     # Copy the model file into build context
     print(f"Copying model: {model_path}")
-    shutil.copy(model_path, ctx / model_filename)
+    try:
+        shutil.copy(model_path, ctx / model_filename)
+    except Exception as e:
+        print(f"ERROR: Failed to copy model file: {e}")
+        return False
 
     # Write requirements.txt based on model type
     requirements = _get_requirements_for_model(model_path)
     print("Writing requirements.txt")
-    (ctx / "requirements.txt").write_text(requirements)
+    try:
+        (ctx / "requirements.txt").write_text(requirements)
+    except Exception as e:
+        print(f"ERROR: Failed to write requirements.txt: {e}")
+        return False
 
     # Write Dockerfile with model filename substituted
     print("Writing Dockerfile")
-    dockerfile_content = DOCKERFILE.format(model_filename=model_filename)
-    (ctx / "Dockerfile").write_text(dockerfile_content)
+    try:
+        dockerfile_content = DOCKERFILE.format(model_filename=model_filename)
+        (ctx / "Dockerfile").write_text(dockerfile_content)
+    except Exception as e:
+        print(f"ERROR: Failed to write Dockerfile: {e}")
+        return False
 
     # Copy inference script and sample image
     print("Copying inference script")
@@ -172,7 +215,10 @@ def package_model(model_path, image_name):
     _create_sample_image(sample_path)
     
     print("Copying sample image")
-    shutil.copy(sample_path, ctx / "sample.jpg")
+    try:
+        shutil.copy(sample_path, ctx / "sample.jpg")
+    except Exception as e:
+        print(f"WARNING: Failed to copy sample image: {e}")
 
     # Build Docker image
     print(f"Building Docker image: {image_name}")
