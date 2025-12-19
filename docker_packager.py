@@ -50,9 +50,11 @@ def check_docker_available():
 
 def _get_requirements_for_model(model_path):
     """Determine required dependencies based on model file extension."""
-    if model_path.endswith('.pth'):
+    ext = Path(model_path).suffix.lower()
+    
+    if ext == '.pth':
         return "torch\ntorchvision\nPillow\n"
-    elif model_path.endswith('.h5'):
+    elif ext == '.h5':
         return "tensorflow\nPillow\n"
     else:
         # Fallback for unknown model types
@@ -85,8 +87,11 @@ def _create_sample_image(sample_path):
 
 def _create_placeholder_image(sample_path):
     """Create a placeholder file when PIL is unavailable."""
-    with open(sample_path, 'w') as f:
-        f.write("# Placeholder image file\n")
+    try:
+        with open(sample_path, 'w') as f:
+            f.write("# Placeholder image file\n")
+    except Exception as e:
+        print(f"WARNING: Failed to create placeholder image: {e}")
 
 
 def _verify_docker_image(image_name):
