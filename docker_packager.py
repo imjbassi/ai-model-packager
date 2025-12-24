@@ -215,6 +215,14 @@ def package_model(model_path, image_name):
 
     # Copy inference script and sample image
     print("Copying inference script")
+    infer_script = "infer.py"
+    if os.path.exists(infer_script):
+        try:
+            shutil.copy(infer_script, ctx / infer_script)
+        except Exception as e:
+            print(f"WARNING: Failed to copy inference script: {e}")
+    else:
+        print(f"WARNING: Inference script not found: {infer_script}")
     
     sample_path = "sample.jpg"
     _create_sample_image(sample_path)
