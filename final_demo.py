@@ -23,10 +23,9 @@ def format_file_size(size_bytes: int) -> str:
     if size_bytes < 0:
         return "0B"
     
-    if size_bytes >= 1024 * 1024:
-        return f"{size_bytes / (1024 * 1024):.1f}MB"
-    elif size_bytes >= 1024:
-        return f"{size_bytes / 1024:.1f}KB"
+    for unit, threshold in [("GB", 1024**3), ("MB", 1024**2), ("KB", 1024)]:
+        if size_bytes >= threshold:
+            return f"{size_bytes / threshold:.1f}{unit}"
     return f"{size_bytes}B"
 
 
