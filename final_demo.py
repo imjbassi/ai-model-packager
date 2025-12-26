@@ -7,7 +7,7 @@ features, and workflow without executing any build or deployment operations.
 """
 import os
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 
 def format_file_size(size_bytes: int) -> str:
@@ -23,7 +23,13 @@ def format_file_size(size_bytes: int) -> str:
     if size_bytes < 0:
         return "0B"
     
-    for unit, threshold in [("GB", 1024**3), ("MB", 1024**2), ("KB", 1024)]:
+    units: List[Tuple[str, int]] = [
+        ("GB", 1024**3),
+        ("MB", 1024**2),
+        ("KB", 1024),
+    ]
+    
+    for unit, threshold in units:
         if size_bytes >= threshold:
             return f"{size_bytes / threshold:.1f}{unit}"
     return f"{size_bytes}B"
@@ -39,7 +45,7 @@ def display_project_files() -> None:
         "model_loader.py": "Safe PyTorch model loading and validation",
         "infer.py": "Model inference pipeline and prediction execution",
         "resnet18_full.pth": "Demo model - Pre-trained ResNet-18 (47MB)",
-        "package_python.py": "Alternative Python package generation (non-Docker)"
+        "package_python.py": "Alternative Python package generation (non-Docker)",
     }
     
     for filename, description in files.items():
@@ -98,7 +104,7 @@ def display_cli_usage() -> None:
         "Generate Docker build context directory",
         "Create Dockerfile with required dependencies",
         "Build Docker container image",
-        "Package model for deployment"
+        "Package model for deployment",
     ]
     
     for idx, step in enumerate(workflow_steps, start=1):
@@ -116,7 +122,7 @@ def display_features() -> None:
         "CLI packaging interface",
         "Inference pipeline integration",
         "Python packaging alternative",
-        "Error handling and validation"
+        "Error handling and validation",
     ]
     
     for feature in features:
@@ -133,7 +139,7 @@ def display_workflow() -> None:
         "Dockerfile created with Python + PyTorch dependencies",
         "Model and inference script packaged together",
         "Container built and ready for deployment",
-        "Run inference via container or Python package"
+        "Run inference via container or Python package",
     ]
     
     for idx, step in enumerate(workflow_steps, start=1):
@@ -149,7 +155,7 @@ def display_technology_stack() -> None:
         "Docker": "Containerization and deployment platform",
         "Python": "Core implementation language",
         "CLI (argparse)": "Command-line interface framework",
-        "Subprocess": "Docker build process automation"
+        "Subprocess": "Docker build process automation",
     }
     
     for tech_name, purpose in technologies.items():
