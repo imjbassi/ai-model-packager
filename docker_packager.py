@@ -17,7 +17,11 @@ CMD ["python", "infer.py", "--model", "{model_filename}", "--test-input", "sampl
 
 
 def check_docker_available():
-    """Check if Docker daemon is running and accessible."""
+    """Check if Docker daemon is running and accessible.
+    
+    Returns:
+        bool: True if Docker is available and responsive, False otherwise.
+    """
     try:
         print("Checking Docker daemon availability...")
         result = subprocess.run(
@@ -49,7 +53,14 @@ def check_docker_available():
 
 
 def _get_requirements_for_model(model_path):
-    """Determine required dependencies based on model file extension."""
+    """Determine required dependencies based on model file extension.
+    
+    Args:
+        model_path: Path to the model file.
+        
+    Returns:
+        str: Requirements file content with necessary dependencies.
+    """
     ext = Path(model_path).suffix.lower()
     
     if ext == '.pth':
@@ -62,7 +73,11 @@ def _get_requirements_for_model(model_path):
 
 
 def _create_sample_image(sample_path):
-    """Create a sample image file if it doesn't exist."""
+    """Create a sample image file if it doesn't exist.
+    
+    Args:
+        sample_path: Path where the sample image should be created.
+    """
     if os.path.exists(sample_path):
         return
     
@@ -86,7 +101,11 @@ def _create_sample_image(sample_path):
 
 
 def _create_placeholder_image(sample_path):
-    """Create a placeholder file when PIL is unavailable."""
+    """Create a placeholder file when PIL is unavailable.
+    
+    Args:
+        sample_path: Path where the placeholder should be created.
+    """
     try:
         with open(sample_path, 'w') as f:
             f.write("# Placeholder image file\n")
@@ -95,7 +114,14 @@ def _create_placeholder_image(sample_path):
 
 
 def _verify_docker_image(image_name):
-    """Verify that the Docker image was created successfully."""
+    """Verify that the Docker image was created successfully.
+    
+    Args:
+        image_name: Name of the Docker image to verify.
+        
+    Returns:
+        bool: True if verification succeeded or was skipped, False otherwise.
+    """
     print("Verifying image...")
     try:
         verify_result = subprocess.run(
@@ -124,7 +150,15 @@ def _verify_docker_image(image_name):
 
 
 def _fallback_to_python_package(model_path, image_name):
-    """Attempt to create a Python package as fallback when Docker is unavailable."""
+    """Attempt to create a Python package as fallback when Docker is unavailable.
+    
+    Args:
+        model_path: Path to the model file.
+        image_name: Name to use for the package (Docker image name repurposed).
+        
+    Returns:
+        bool: True if fallback packaging succeeded, False otherwise.
+    """
     print("WARNING: Docker is not available!")
     print("INFO: Falling back to Python packaging alternative...")
     
@@ -146,8 +180,7 @@ def _fallback_to_python_package(model_path, image_name):
 
 
 def package_model(model_path, image_name):
-    """
-    Build a Docker image containing the model and inference environment.
+    """Build a Docker image containing the model and inference environment.
     
     The image includes:
     - Python runtime
@@ -157,11 +190,11 @@ def package_model(model_path, image_name):
     - Sample test image
     
     Args:
-        model_path: Path to the model file to package
-        image_name: Name for the resulting Docker image
+        model_path: Path to the model file to package.
+        image_name: Name for the resulting Docker image.
         
     Returns:
-        bool: True if packaging succeeded, False otherwise
+        bool: True if packaging succeeded, False otherwise.
     """
     # Validate inputs
     if not os.path.exists(model_path):
@@ -179,6 +212,7 @@ def package_model(model_path, image_name):
     model_filename = os.path.basename(model_path)
     ctx = Path("build_context")
     
+    # Create build context directory
     try:
         ctx.mkdir(exist_ok=True)
     except Exception as e:
@@ -213,7 +247,7 @@ def package_model(model_path, image_name):
         print(f"ERROR: Failed to write Dockerfile: {e}")
         return False
 
-    # Copy inference script and sample image
+    # Copy inference script
     print("Copying inference script")
     infer_script = "infer.py"
     if os.path.exists(infer_script):
@@ -224,6 +258,7 @@ def package_model(model_path, image_name):
     else:
         print(f"WARNING: Inference script not found: {infer_script}")
     
+    # Create and copy sample image
     sample_path = "sample.jpg"
     _create_sample_image(sample_path)
     
