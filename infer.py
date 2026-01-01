@@ -78,11 +78,11 @@ def run_tensorflow_inference(model_path: str, input_image: str = None):
     
     Args:
         model_path: Path to the TensorFlow model file (.h5)
-        input_image: Optional path to an input image. If provided, uses the image;
-                     otherwise uses dummy data.
+        input_image: Optional path to an input image. If not provided, uses dummy data.
     """
     import numpy as np
     import tensorflow as tf
+    from PIL import Image
     
     # Load model
     try:
@@ -95,8 +95,6 @@ def run_tensorflow_inference(model_path: str, input_image: str = None):
     if input_image and os.path.exists(input_image):
         print(f"Processing image: {input_image}")
         try:
-            from PIL import Image
-            
             # Load and preprocess image
             image = Image.open(input_image).convert('RGB')
             image = image.resize((224, 224))
