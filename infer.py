@@ -55,16 +55,24 @@ def run_pytorch_inference(model_path: str, input_image: str = None):
     try:
         with torch.no_grad():
             outputs = model(input_tensor)
-            probabilities = torch.nn.functional.softmax(outputs, dim=1)
             
-            # Display top 5 predictions
-            top5_prob, top5_indices = torch.topk(probabilities, 5)
-            
-            print("\nTop 5 predictions:")
-            for i in range(5):
-                idx = top5_indices[0][i].item()
-                prob = top5_prob[0][i].item()
-                print(f"   {i+1}. Class {idx}: {prob:.4f} ({prob*100:.1f}%)")
+            # Check if output is suitable for classification
+            if len(outputs.shape) == 2 and outputs.shape[0] == 1:
+                probabilities = torch.nn.functional.softmax(outputs, dim=1)
+                
+                # Display top 5 predictions
+                num_classes = outputs.shape[1]
+                top_k = min(5, num_classes)
+                top_prob, top_indices = torch.topk(probabilities, top_k)
+                
+                print(f"\nTop {top_k} predictions:")
+                for i in range(top_k):
+                    idx = top_indices[0][i].item()
+                    prob = top_prob[0][i].item()
+                    print(f"   {i+1}. Class {idx}: {prob:.4f} ({prob*100:.1f}%)")
+            else:
+                print(f"\nPyTorch inference output shape: {outputs.shape}")
+                print(f"PyTorch inference output: {outputs}")
     except Exception as e:
         print(f"Error during inference: {e}", file=sys.stderr)
         sys.exit(1)
@@ -118,18 +126,21 @@ def run_tensorflow_inference(model_path: str, input_image: str = None):
     # Run inference
     try:
         output = model(input_data)
-        print("\nTensorFlow inference output shape:", output.shape)
-        print("TensorFlow inference output:", output.numpy())
+        print(f"\nTensorFlow inference output shape: {output.shape}")
         
-        # If output looks like classification probabilities, show top predictions
+        # If output looks like classification logits/probabilities, show top predictions
         if len(output.shape) == 2 and output.shape[0] == 1:
             probabilities = tf.nn.softmax(output, axis=1).numpy()[0]
-            top5_indices = np.argsort(probabilities)[-5:][::-1]
+            num_classes = len(probabilities)
+            top_k = min(5, num_classes)
+            top_indices = np.argsort(probabilities)[-top_k:][::-1]
             
-            print("\nTop 5 predictions:")
-            for i, idx in enumerate(top5_indices):
+            print(f"\nTop {top_k} predictions:")
+            for i, idx in enumerate(top_indices):
                 prob = probabilities[idx]
                 print(f"   {i+1}. Class {idx}: {prob:.4f} ({prob*100:.1f}%)")
+        else:
+            print(f"TensorFlow inference output: {output.numpy()}")
     except Exception as e:
         print(f"Error during inference: {e}", file=sys.stderr)
         sys.exit(1)
