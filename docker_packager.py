@@ -263,10 +263,13 @@ def package_model(model_path, image_name):
     _create_sample_image(sample_path)
     
     print("Copying sample image")
-    try:
-        shutil.copy(sample_path, ctx / "sample.jpg")
-    except Exception as e:
-        print(f"WARNING: Failed to copy sample image: {e}")
+    if os.path.exists(sample_path):
+        try:
+            shutil.copy(sample_path, ctx / "sample.jpg")
+        except Exception as e:
+            print(f"WARNING: Failed to copy sample image: {e}")
+    else:
+        print("WARNING: Sample image not found, skipping")
 
     # Build Docker image
     print(f"Building Docker image: {image_name}")
