@@ -37,7 +37,7 @@ def format_file_size(size_bytes: int) -> str:
 
 def display_project_files() -> None:
     """Display project structure with file descriptions and sizes."""
-    print("\nStep 1: Project Structure")
+    print("\n=== Step 1: Project Structure ===")
     
     files: Dict[str, str] = {
         "cli.py": "Main command-line interface for model packaging",
@@ -53,22 +53,22 @@ def display_project_files() -> None:
             try:
                 size = os.path.getsize(filename)
                 size_str = format_file_size(size)
-                print(f"   [✓] {filename} ({size_str}) - {description}")
+                print(f"   [✓] {filename:25} ({size_str:>8}) - {description}")
             except OSError:
-                print(f"   [✓] {filename} (size unavailable) - {description}")
+                print(f"   [✓] {filename:25} (unavailable) - {description}")
         else:
-            print(f"   [✗] {filename} - {description}")
+            print(f"   [✗] {filename:25} (missing)     - {description}")
 
 
 def display_build_context() -> None:
     """Display contents of the Docker build context directory."""
-    print("\nStep 2: Docker Build Context")
+    print("\n=== Step 2: Docker Build Context ===")
     print("   build_context/")
     
     build_context_path = Path("build_context")
     
     if not build_context_path.exists():
-        print("      Build context not yet generated (run CLI to create)")
+        print("      (Not yet generated - run CLI to create)")
         return
     
     try:
@@ -82,22 +82,22 @@ def display_build_context() -> None:
                 try:
                     size = item.stat().st_size
                     size_str = format_file_size(size)
-                    print(f"      {item.name} ({size_str})")
+                    print(f"      ├── {item.name} ({size_str})")
                 except OSError:
-                    print(f"      {item.name} (size unavailable)")
+                    print(f"      ├── {item.name} (size unavailable)")
             elif item.is_dir():
-                print(f"      {item.name}/ (directory)")
+                print(f"      ├── {item.name}/ (directory)")
     except PermissionError:
-        print("      Unable to read build context (permission denied)")
+        print("      (Unable to read - permission denied)")
     except OSError as e:
-        print(f"      Error reading build context: {e}")
+        print(f"      (Error reading directory: {e})")
 
 
 def display_cli_usage() -> None:
     """Display CLI interface usage and workflow."""
-    print("\nStep 3: CLI Interface")
+    print("\n=== Step 3: CLI Interface ===")
     print("   Usage: python cli.py --input MODEL --image IMAGE_NAME")
-    print("   Workflow:")
+    print("\n   Workflow:")
     
     workflow_steps: List[str] = [
         "Load and validate PyTorch model file",
@@ -113,7 +113,7 @@ def display_cli_usage() -> None:
 
 def display_features() -> None:
     """Display core features of the packaging tool."""
-    print("\nStep 4: Core Features")
+    print("\n=== Step 4: Core Features ===")
     
     features: List[str] = [
         "PyTorch model loading (.pth files)",
@@ -131,7 +131,7 @@ def display_features() -> None:
 
 def display_workflow() -> None:
     """Display typical user workflow for model packaging."""
-    print("\nStep 5: Typical Workflow")
+    print("\n=== Step 5: Typical Workflow ===")
     
     workflow_steps: List[str] = [
         "User provides trained PyTorch model (.pth file)",
@@ -148,7 +148,7 @@ def display_workflow() -> None:
 
 def display_technology_stack() -> None:
     """Display technology stack and component purposes."""
-    print("\nStep 6: Technology Stack")
+    print("\n=== Step 6: Technology Stack ===")
     
     technologies: Dict[str, str] = {
         "PyTorch": "Deep learning framework and model support",
@@ -159,7 +159,7 @@ def display_technology_stack() -> None:
     }
     
     for tech_name, purpose in technologies.items():
-        print(f"   {tech_name}: {purpose}")
+        print(f"   • {tech_name:20} → {purpose}")
 
 
 def display_summary() -> None:
@@ -167,16 +167,16 @@ def display_summary() -> None:
     separator = "=" * 60
     
     print(f"\n{separator}")
-    print("CAPSTONE PROJECT SUMMARY")
+    print("CAPSTONE PROJECT SUMMARY".center(60))
     print(separator)
-    print("Project: AI Model Packaging Library")
-    print("Goal: Automate ML model containerization")
-    print("Status: Fully functional with CLI interface")
+    print("Project:        AI Model Packaging Library")
+    print("Goal:           Automate ML model containerization")
+    print("Status:         Fully functional with CLI interface")
     print("Key Innovation: One-command model packaging")
-    print("Output: Production-ready Docker containers")
-    print("Benefit: Simplified ML model deployment")
-    print("\nDemo complete - All requirements satisfied!")
-    print("Safe for screencast recording")
+    print("Output:         Production-ready Docker containers")
+    print("Benefit:        Simplified ML model deployment")
+    print(f"\n{'Demo complete - All requirements satisfied!'.center(60)}")
+    print(f"{'Safe for screencast recording'.center(60)}")
     print(separator)
 
 
@@ -184,7 +184,8 @@ def main() -> None:
     """Execute the demonstration script."""
     separator = "=" * 60
     
-    print("AI Model Packaging Library - Demonstration")
+    print(separator)
+    print("AI Model Packaging Library - Demonstration".center(60))
     print(separator)
     print("Capstone Project: AI Model Packaging Tool")
     print("Features: CLI packaging, Docker containers, inference pipeline")
