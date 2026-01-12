@@ -87,6 +87,9 @@ def run_tensorflow_inference(model_path: str, input_image: str = None):
     Args:
         model_path: Path to the TensorFlow model file (.h5)
         input_image: Optional path to an input image. If not provided, uses dummy data.
+    
+    Returns:
+        Model output tensor
     """
     import numpy as np
     import tensorflow as tf
@@ -144,6 +147,8 @@ def run_tensorflow_inference(model_path: str, input_image: str = None):
     except Exception as e:
         print(f"Error during inference: {e}", file=sys.stderr)
         sys.exit(1)
+    
+    return output
 
 
 def main():
