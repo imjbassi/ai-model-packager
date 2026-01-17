@@ -71,6 +71,8 @@ def _load_resnet18_model():
         return models.resnet18(weights=ResNet18_Weights.IMAGENET1K_V1)
     except (ImportError, AttributeError):
         # Fall back to deprecated pretrained parameter for older PyTorch versions
+        import warnings
+        warnings.filterwarnings('ignore', category=FutureWarning)
         return models.resnet18(pretrained=True)
 
 
@@ -108,7 +110,7 @@ def _print_model_info(output_path):
     file_size = os.path.getsize(output_path)
     size_mb = file_size / (1024 * 1024)
     
-    print("Model saved successfully!")
+    print("\nModel saved successfully!")
     print(f"File: {output_path}")
     print(f"Size: {size_mb:.1f} MB")
     print("Architecture: ResNet-18 (18 layers)")
@@ -122,7 +124,8 @@ def main():
     try:
         generate_resnet18_model()
         return 0
-    except Exception:
+    except Exception as e:
+        print(f"Fatal error: {e}", file=sys.stderr)
         return 1
 
 

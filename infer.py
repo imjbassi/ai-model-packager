@@ -109,7 +109,7 @@ def run_tensorflow_inference(model_path: str, input_image: str = None):
             # Load and preprocess image
             image = Image.open(input_image).convert('RGB')
             image = image.resize((224, 224))
-            input_data = np.array(image).astype(np.float32)
+            input_data = np.array(image, dtype=np.float32)
             
             # Normalize to [0, 1] range
             input_data = input_data / 255.0
