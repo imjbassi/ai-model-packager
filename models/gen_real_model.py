@@ -124,8 +124,7 @@ def main():
     try:
         generate_resnet18_model()
         return 0
-    except Exception as e:
-        print(f"Fatal error: {e}", file=sys.stderr)
+    except Exception:
         return 1
 
 
