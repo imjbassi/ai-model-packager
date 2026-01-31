@@ -7,6 +7,7 @@ and saves it to disk for use in packaging demonstrations.
 """
 import os
 import sys
+import warnings
 import torch
 import torchvision.models as models
 
@@ -71,7 +72,6 @@ def _load_resnet18_model():
         return models.resnet18(weights=ResNet18_Weights.IMAGENET1K_V1)
     except (ImportError, AttributeError):
         # Fall back to deprecated pretrained parameter for older PyTorch versions
-        import warnings
         warnings.filterwarnings('ignore', category=FutureWarning)
         return models.resnet18(pretrained=True)
 
