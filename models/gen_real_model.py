@@ -72,8 +72,9 @@ def _load_resnet18_model():
         return models.resnet18(weights=ResNet18_Weights.IMAGENET1K_V1)
     except (ImportError, AttributeError):
         # Fall back to deprecated pretrained parameter for older PyTorch versions
-        warnings.filterwarnings('ignore', category=FutureWarning)
-        return models.resnet18(pretrained=True)
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', category=FutureWarning)
+            return models.resnet18(pretrained=True)
 
 
 def _get_output_path():
