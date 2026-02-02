@@ -124,7 +124,8 @@ def run_tensorflow_inference(model_path: str, input_image: str = None):
             print(f"Warning: Image file not found: {input_image}", file=sys.stderr)
         print("Using dummy input tensor (no image provided)")
         # Create dummy input (batch_size=1, height=224, width=224, channels=3)
-        input_data = np.random.randn(1, 224, 224, 3).astype(np.float32)
+        # Use uniform distribution [0, 1] to match normalized image data
+        input_data = np.random.rand(1, 224, 224, 3).astype(np.float32)
     
     # Run inference
     try:
