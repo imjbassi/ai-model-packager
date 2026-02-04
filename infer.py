@@ -129,7 +129,7 @@ def run_tensorflow_inference(model_path: str, input_image: str = None):
     
     # Run inference
     try:
-        output = model(input_data)
+        output = model(input_data, training=False)
         print(f"\nTensorFlow inference output shape: {output.shape}")
         
         # If output looks like classification logits/probabilities, show top predictions
