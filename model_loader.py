@@ -39,14 +39,15 @@ def load_model(path):
         return model
     
     # TensorFlow/Keras formats
-    if ext in (".h5", ".keras"):
+    elif ext in (".h5", ".keras"):
         # Load TensorFlow/Keras model
         model = tf.keras.models.load_model(path)
         return model
     
     # Unsupported format
-    raise ValueError(
-        f"Unsupported model format: {ext}. "
-        "Supported formats are .pth/.pt (PyTorch) and .h5/.keras (TensorFlow/Keras)."
-    )
+    else:
+        raise ValueError(
+            f"Unsupported model format: {ext}. "
+            "Supported formats are .pth/.pt (PyTorch) and .h5/.keras (TensorFlow/Keras)."
+        )
 ```
