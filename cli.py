@@ -1,4 +1,3 @@
-```python
 import argparse
 import sys
 from docker_packager import package_model
@@ -53,4 +52,3 @@ Examples:
 
 if __name__ == "__main__":
     sys.exit(main())
-```

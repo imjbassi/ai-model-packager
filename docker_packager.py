@@ -1,4 +1,3 @@
-```python
 import os
 import subprocess
 import shutil
@@ -166,7 +165,7 @@ def _fallback_to_python_package(model_path, image_name):
         from package_python import create_python_package
         package_file = create_python_package(
             model_path,
-            f"{image_name.replace(':', '_')}_package"
+            image_name.replace(':', '_')
         )
         print(f"SUCCESS: Created Python package instead: {package_file}")
         print("INFO: You can run this package with: python -m zipapp <package_file>")
@@ -296,4 +295,3 @@ def package_model(model_path, image_name):
     except Exception as e:
         print(f"ERROR: Docker build failed with error: {e}")
         return False
-```

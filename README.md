@@ -8,6 +8,14 @@ The project delivers a **command-line interface (CLI) tool** that automates the 
 
 ---
 
+## Demo
+
+![AI Model Packager in action](assets/demo.gif)
+
+*One command turns a trained model into a deployable artifact. When Docker isn't available, the tool automatically falls back to a portable Python package. ([Watch the MP4](assets/demo.mp4))*
+
+---
+
 ## Project Purpose
 
 The AI Model Packaging Library addresses a **common challenge in machine learning workflows**: deploying trained models into production.
@@ -41,12 +49,18 @@ ai-model-packager/
 │
 ├── cli.py                  # Main CLI entry point
 ├── docker_packager.py      # Docker build logic
-├── infer.py                # Inference script inside container
+├── package_python.py       # Portable Python-package fallback (no Docker)
+├── model_loader.py         # PyTorch / TensorFlow model loading
+├── infer.py                # Inference script (runs inside container or locally)
+├── final_demo.py           # Read-only project walkthrough
 ├── models/
 │   └── gen_real_model.py   # Script to generate a real pretrained model
+├── assets/
+│   ├── demo.gif            # Demo animation shown above
+│   └── demo.mp4            # Demo screen recording
 ├── requirements.txt        # Python dependencies
-├── sample.jpg              # Example input image for inference
-├── resnet18_full.pth       # Generated model file (not included in repo by default)
+├── sample.jpg              # Example input image (generated on demand, gitignored)
+├── resnet18_full.pth       # Generated model file (gitignored, not committed)
 ├── LICENSE                 # MIT License
 └── README.md               # This file
 ```

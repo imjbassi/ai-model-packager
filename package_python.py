@@ -1,4 +1,3 @@
-```python
 import argparse
 import shutil
 import sys
@@ -6,20 +5,23 @@ import zipfile
 from pathlib import Path
 
 
-def create_python_package(model_path: str, package_name: str) -> None:
+def create_python_package(model_path: str, package_name: str) -> str:
     """
     Create a portable Python package for model deployment.
-    
+
     This function creates a self-contained package that includes:
     - The model file
     - Required Python scripts (infer.py, model_loader.py)
     - Dependencies specification (requirements.txt)
     - Cross-platform run scripts (run.py for Unix/Mac, run.bat for Windows)
-    
+
     Args:
         model_path: Path to the model file to be packaged
         package_name: Name for the output package (without extension)
-    
+
+    Returns:
+        Path to the created zip archive.
+
     Raises:
         FileNotFoundError: If model_path or required scripts don't exist
         PermissionError: If unable to create package directory or files
@@ -49,6 +51,8 @@ def create_python_package(model_path: str, package_name: str) -> None:
     
     # Print usage instructions
     _print_usage_instructions(zip_path, package_dir)
+
+    return zip_path
 
 
 def _copy_required_files(model_file: Path, model_filename: str, package_dir: Path) -> None:
@@ -242,4 +246,3 @@ Examples:
 
 if __name__ == "__main__":
     sys.exit(main())
-```

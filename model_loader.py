@@ -1,4 +1,3 @@
-```python
 import os
 import torch
 import tensorflow as tf
@@ -49,4 +48,3 @@ def load_model(path):
         f"Unsupported model format: {ext}. "
         "Supported formats are .pth/.pt (PyTorch) and .h5/.keras (TensorFlow/Keras)."
     )
-```
