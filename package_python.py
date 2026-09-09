@@ -1,246 +1,258 @@
+"""Portable Python package fallback for environments without Docker.
+
+Produces a self-contained directory (and matching zip) holding the model, the
+inference scripts, a format-specific ``requirements.txt`` and cross-platform
+launcher scripts.
+"""
+from __future__ import annotations
+
 import argparse
 import shutil
 import sys
 import zipfile
 from pathlib import Path
 
+from formats import describe_support, require_format
 
-def create_python_package(model_path: str, package_name: str) -> str:
-    """
-    Create a portable Python package for model deployment.
+SUPPORT_FILES = ("infer.py", "model_loader.py", "formats.py")
+SAMPLE_IMAGE = "sample.jpg"
 
-    This function creates a self-contained package that includes:
-    - The model file
-    - Required Python scripts (infer.py, model_loader.py)
-    - Dependencies specification (requirements.txt)
-    - Cross-platform run scripts (run.py for Unix/Mac, run.bat for Windows)
-
-    Args:
-        model_path: Path to the model file to be packaged
-        package_name: Name for the output package (without extension)
-
-    Returns:
-        Path to the created zip archive.
-
-    Raises:
-        FileNotFoundError: If model_path or required scripts don't exist
-        PermissionError: If unable to create package directory or files
-    """
-    model_file = Path(model_path)
-    if not model_file.exists():
-        raise FileNotFoundError(f"Model file not found: {model_path}")
-    
-    model_filename = model_file.name
-    package_dir = Path(f"{package_name}_package")
-    package_dir.mkdir(exist_ok=True)
-    
-    print(f"📦 Creating Python package: {package_name}")
-    
-    # Copy required files
-    _copy_required_files(model_file, model_filename, package_dir)
-    
-    # Create requirements.txt
-    _create_requirements_file(package_dir)
-    
-    # Create run scripts for different platforms
-    _create_run_script(package_dir, model_filename)
-    _create_batch_script(package_dir)
-    
-    # Create zip package
-    zip_path = _create_zip_archive(package_dir, package_name)
-    
-    # Print usage instructions
-    _print_usage_instructions(zip_path, package_dir)
-
-    return zip_path
-
-
-def _copy_required_files(model_file: Path, model_filename: str, package_dir: Path) -> None:
-    """
-    Copy model and required Python scripts to the package directory.
-    
-    Args:
-        model_file: Path object for the model file
-        model_filename: Name of the model file
-        package_dir: Destination package directory
-    
-    Raises:
-        FileNotFoundError: If required scripts are missing
-    """
-    required_scripts = ["infer.py", "model_loader.py"]
-    
-    # Copy model file
-    shutil.copy(model_file, package_dir / model_filename)
-    
-    # Copy required scripts
-    for script in required_scripts:
-        script_path = Path(script)
-        if not script_path.exists():
-            raise FileNotFoundError(f"Required script not found: {script}")
-        shutil.copy(script_path, package_dir / script)
-
-
-def _create_requirements_file(package_dir: Path) -> None:
-    """
-    Create requirements.txt with necessary dependencies.
-    
-    Args:
-        package_dir: Package directory where requirements.txt will be created
-    """
-    requirements = "torch\ntorchvision\n"
-    (package_dir / "requirements.txt").write_text(requirements, encoding="utf-8")
-
-
-def _create_run_script(package_dir: Path, model_filename: str) -> None:
-    """
-    Create a Python run script for Unix/Mac systems.
-    
-    Args:
-        package_dir: Package directory where run.py will be created
-        model_filename: Name of the model file to pass to infer.py
-    """
-    run_script = f"""#!/usr/bin/env python3
-\"\"\"
-Automated run script for model inference.
-This script installs dependencies and runs inference on the packaged model.
-\"\"\"
-import sys
+RUN_SCRIPT = '''#!/usr/bin/env python3
+"""Install dependencies and run inference on the packaged model."""
 import subprocess
+import sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+MODEL = "{model_filename}"
 
 
-def main():
-    \"\"\"Install dependencies and run inference.\"\"\"
+def main() -> int:
     print("Installing dependencies...")
     try:
         subprocess.check_call(
-            [sys.executable, "-m", "pip", "install", "-q", "-r", "requirements.txt"]
+            [sys.executable, "-m", "pip", "install", "-q", "-r", str(HERE / "requirements.txt")]
         )
-    except subprocess.CalledProcessError as e:
-        print(f"Error installing dependencies: {{e}}", file=sys.stderr)
+    except subprocess.CalledProcessError as exc:
+        print(f"Error installing dependencies: {{exc}}", file=sys.stderr)
         return 1
-    
+
+    cmd = [sys.executable, str(HERE / "infer.py"), "--model", str(HERE / MODEL)]
+    sample = HERE / "{sample_image}"
+    if sample.exists():
+        cmd += ["--test-input", str(sample)]
+    # Anything passed to run.py (e.g. --top-k 3) is forwarded to infer.py.
+    cmd += sys.argv[1:]
+
     print("Running inference...")
     try:
-        subprocess.check_call(
-            [sys.executable, "infer.py", "--model", "{model_filename}"]
-        )
-    except subprocess.CalledProcessError as e:
-        print(f"Error running inference: {{e}}", file=sys.stderr)
+        subprocess.check_call(cmd, cwd=str(HERE))
+    except subprocess.CalledProcessError as exc:
+        print(f"Error running inference: {{exc}}", file=sys.stderr)
         return 1
-    
     return 0
 
 
 if __name__ == "__main__":
     sys.exit(main())
-"""
-    run_script_path = package_dir / "run.py"
-    run_script_path.write_text(run_script, encoding="utf-8")
-    
-    # Make executable on Unix-like systems
-    try:
-        run_script_path.chmod(0o755)
-    except (OSError, NotImplementedError):
-        # Windows or other systems that don't support chmod
-        pass
+'''
 
-
-def _create_batch_script(package_dir: Path) -> None:
-    """
-    Create a Windows batch script for easy execution.
-    
-    Args:
-        package_dir: Package directory where run.bat will be created
-    """
-    batch_script = """@echo off
+BATCH_SCRIPT = """@echo off
 echo Running model inference...
-python run.py
+python "%~dp0run.py" %*
 if %ERRORLEVEL% NEQ 0 (
     echo Error occurred during execution.
-    pause
     exit /b %ERRORLEVEL%
 )
 echo.
 echo Execution completed successfully.
-pause
 """
-    (package_dir / "run.bat").write_text(batch_script, encoding="utf-8")
+
+SHELL_SCRIPT = """#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")"
+exec python3 run.py "$@"
+"""
+
+README_TEMPLATE = """# {package_name}
+
+Portable inference package generated by ai-model-packager.
+
+- Model: `{model_filename}` ({model_label})
+- Requires: Python 3.9+
+
+## Run
+
+```bash
+python run.py             # Linux / macOS / Windows
+./run.sh                  # Linux / macOS
+run.bat                   # Windows
+```
+
+Extra arguments are forwarded to `infer.py`, for example:
+
+```bash
+python run.py --top-k 3 --json
+python run.py --test-input path/to/image.jpg
+```
+"""
 
 
-def _create_zip_archive(package_dir: Path, package_name: str) -> str:
-    """
-    Create a zip archive of the package directory.
-    
+def create_python_package(
+    model_path: str,
+    package_name: str,
+    output_dir: str = ".",
+    include_sample: bool = True,
+) -> str:
+    """Create a portable Python package for model deployment.
+
     Args:
-        package_dir: Directory to be zipped
-        package_name: Base name for the zip file
-    
+        model_path: Path to the model file to package.
+        package_name: Base name for the output package.
+        output_dir: Directory the package and zip are written to.
+        include_sample: Generate a sample image when Pillow is available.
+
     Returns:
-        Path to the created zip file
+        Path to the created zip archive.
+
+    Raises:
+        FileNotFoundError: If the model or a required support script is missing.
+        ValueError: If the model format is not supported.
     """
-    zip_path = f"{package_name}_package.zip"
-    with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-        for file in package_dir.rglob("*"):
-            if file.is_file():
-                # Preserve directory structure within zip relative to package_dir
-                zipf.write(file, arcname=file.relative_to(package_dir.parent))
-    
+    model_file = Path(model_path)
+    if not model_file.exists():
+        raise FileNotFoundError(f"Model file not found: {model_path}")
+
+    fmt = require_format(model_file)
+    out_root = Path(output_dir)
+    out_root.mkdir(parents=True, exist_ok=True)
+
+    package_dir = out_root / f"{package_name}_package"
+    if package_dir.exists():
+        shutil.rmtree(package_dir)
+    package_dir.mkdir(parents=True)
+
+    print(f"Creating Python package: {package_name}")
+
+    shutil.copy(model_file, package_dir / model_file.name)
+    _copy_support_files(package_dir)
+
+    (package_dir / "requirements.txt").write_text(
+        "\n".join(fmt.pip_requirements) + "\n", encoding="utf-8"
+    )
+
+    has_sample = include_sample and _create_sample_image(package_dir / SAMPLE_IMAGE)
+    _write_launchers(package_dir, model_file.name, SAMPLE_IMAGE if has_sample else "")
+
+    (package_dir / "README.md").write_text(
+        README_TEMPLATE.format(
+            package_name=package_name,
+            model_filename=model_file.name,
+            model_label=fmt.label,
+        ),
+        encoding="utf-8",
+    )
+
+    zip_path = _create_zip_archive(package_dir)
+    _print_usage_instructions(zip_path, package_dir)
     return zip_path
 
 
+def _copy_support_files(package_dir: Path) -> None:
+    """Copy the inference scripts next to the model."""
+    project_root = Path(__file__).resolve().parent
+    for script in SUPPORT_FILES:
+        source = project_root / script
+        if not source.exists():
+            raise FileNotFoundError(f"Required script not found: {script}")
+        shutil.copy(source, package_dir / script)
+
+
+def _create_sample_image(sample_path: Path) -> bool:
+    """Write a 224x224 placeholder JPEG; return False if Pillow is missing."""
+    try:
+        from PIL import Image
+    except ImportError:
+        return False
+    try:
+        Image.new("RGB", (224, 224), "steelblue").save(sample_path)
+        return True
+    except OSError:
+        return False
+
+
+def _write_launchers(package_dir: Path, model_filename: str, sample_image: str) -> None:
+    """Write run.py plus the Windows and Unix wrappers."""
+    run_py = package_dir / "run.py"
+    run_py.write_text(
+        RUN_SCRIPT.format(model_filename=model_filename, sample_image=sample_image),
+        encoding="utf-8",
+    )
+    (package_dir / "run.bat").write_text(BATCH_SCRIPT, encoding="utf-8")
+    run_sh = package_dir / "run.sh"
+    run_sh.write_text(SHELL_SCRIPT, encoding="utf-8")
+
+    for script in (run_py, run_sh):
+        try:
+            script.chmod(0o755)
+        except (OSError, NotImplementedError):
+            # Windows and some filesystems do not support POSIX permissions.
+            pass
+
+
+def _create_zip_archive(package_dir: Path) -> str:
+    """Zip ``package_dir``, keeping the package directory as the archive root."""
+    # Built by hand rather than with_suffix(): package names may contain dots
+    # (e.g. "my_model_1.0_package") that with_suffix() would truncate.
+    zip_path = package_dir.parent / f"{package_dir.name}.zip"
+    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as archive:
+        for file in sorted(package_dir.rglob("*")):
+            if file.is_file():
+                archive.write(file, arcname=str(file.relative_to(package_dir.parent)))
+    return str(zip_path)
+
+
 def _print_usage_instructions(zip_path: str, package_dir: Path) -> None:
-    """
-    Print usage instructions for the created package.
-    
-    Args:
-        zip_path: Path to the created zip file
-        package_dir: Path to the package directory
-    """
-    print(f"✅ Created package: {zip_path}")
-    print(f"📁 Package contents: {package_dir}")
-    print("\n🚀 To use:")
+    """Explain how to run the generated package."""
+    print(f"SUCCESS: created package: {zip_path}")
+    print(f"Package contents: {package_dir}")
+    print("\nTo use:")
     print(f"   1. Extract {zip_path}")
-    print(f"   2. Run: python run.py (Unix/Mac/Linux)")
-    print(f"   3. Or double-click: run.bat (Windows)")
+    print(f"   2. cd {package_dir.name}")
+    print("   3. Run: python run.py   (or ./run.sh, or run.bat on Windows)")
 
 
-def main() -> int:
-    """
-    Main entry point for the package creation script.
-    
-    Parses command-line arguments and creates a portable Python package.
-    
-    Returns:
-        Exit code (0 for success, 1 for failure)
-    """
+def build_parser() -> argparse.ArgumentParser:
+    """Build the argument parser for standalone package creation."""
     parser = argparse.ArgumentParser(
-        description="Create portable Python package for model deployment (alternative to Docker)",
+        description="Create a portable Python package for model deployment "
+        "(alternative to Docker). Supported formats: " + describe_support(),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
   %(prog)s --input model.pth --name my_model
-  %(prog)s -i /path/to/model.pt -n production_model
-        """
+  %(prog)s -i /path/to/model.onnx -n production_model -o dist/
+        """,
     )
+    parser.add_argument("--input", "-i", required=True, help="Path to the model file")
+    parser.add_argument("--name", "-n", required=True, help="Package name (no extension)")
     parser.add_argument(
-        "--input", "-i",
-        required=True,
-        help="Path to model file to be packaged"
+        "--output-dir", "-o", default=".", help="Where to write the package (default: .)"
     )
-    parser.add_argument(
-        "--name", "-n",
-        required=True,
-        help="Package name (without extension)"
-    )
-    
-    args = parser.parse_args()
-    
+    return parser
+
+
+def main(argv=None) -> int:
+    """Entry point for ``python package_python.py``."""
+    args = build_parser().parse_args(argv)
     try:
-        create_python_package(args.input, args.name)
-    except Exception as e:
-        print(f"❌ Error: {e}", file=sys.stderr)
+        create_python_package(args.input, args.name, args.output_dir)
+    except (FileNotFoundError, ValueError) as exc:
+        print(f"Error: {exc}", file=sys.stderr)
         return 1
-    
+    except OSError as exc:
+        print(f"Error writing package: {exc}", file=sys.stderr)
+        return 1
     return 0
 
 

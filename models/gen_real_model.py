@@ -1,132 +1,136 @@
 #!/usr/bin/env python3
-"""
-Generate a real ResNet-18 model for demonstration purposes.
+"""Generate a real, pre-trained model for demonstration purposes.
 
-This script downloads a pre-trained ResNet-18 model from PyTorch Hub
-and saves it to disk for use in packaging demonstrations.
+Downloads a torchvision classifier and saves it as a ``.pth`` file, optionally
+exporting the same network to ONNX so the other supported formats can be
+exercised end to end.
 """
+from __future__ import annotations
+
+import argparse
 import os
 import sys
 import warnings
+
 import torch
 import torchvision.models as models
 
+DEFAULT_ARCH = "resnet18"
+SUPPORTED_ARCHS = ("resnet18", "resnet34", "mobilenet_v2")
 
-def generate_resnet18_model():
-    """
-    Download and save a pre-trained ResNet-18 model.
-    
-    Downloads the ResNet-18 model with ImageNet pre-trained weights from
-    PyTorch Hub and saves it to disk. The model is set to evaluation mode
-    before saving.
-    
+
+def _load_pretrained(arch: str):
+    """Load a pre-trained torchvision model, across torchvision versions.
+
+    Args:
+        arch: Architecture name from :data:`SUPPORTED_ARCHS`.
+
     Returns:
-        str: Path to the saved model file.
-        
-    Raises:
-        RuntimeError: If model download or save operation fails.
+        torch.nn.Module: The pre-trained network.
     """
+    factory = getattr(models, arch)
     try:
-        print("Generating pre-trained ResNet-18 model...")
-        print("Downloading model weights from PyTorch Hub...")
-        
-        # Download pre-trained ResNet-18 model (1000 ImageNet classes)
-        model = _load_resnet18_model()
-        
-        # Set model to evaluation mode
-        model.eval()
-        
-        # Determine output path relative to script location
-        output_path = _get_output_path()
-        
-        # Ensure the output directory exists
-        _ensure_output_directory(output_path)
-        
-        # Save the complete model (architecture + weights)
-        torch.save(model, output_path)
-        
-        # Verify the file was created successfully
-        if not os.path.exists(output_path):
-            raise RuntimeError(f"Failed to save model to {output_path}")
-        
-        # Display model information
-        _print_model_info(output_path)
-        
-        return output_path
-        
-    except Exception as e:
-        print(f"Error generating model: {e}", file=sys.stderr)
-        raise RuntimeError(f"Failed to generate ResNet-18 model: {e}") from e
-
-
-def _load_resnet18_model():
-    """
-    Load ResNet-18 model with appropriate method based on PyTorch version.
-    
-    Returns:
-        torch.nn.Module: Loaded ResNet-18 model.
-    """
-    try:
-        # PyTorch >= 0.13 uses weights parameter
-        from torchvision.models import ResNet18_Weights
-        return models.resnet18(weights=ResNet18_Weights.IMAGENET1K_V1)
-    except (ImportError, AttributeError):
-        # Fall back to deprecated pretrained parameter for older PyTorch versions
+        # torchvision >= 0.13 uses the weights enum API.
+        weights_enum = models.get_model_weights(arch).DEFAULT
+        return factory(weights=weights_enum)
+    except (AttributeError, ValueError):
         with warnings.catch_warnings():
-            warnings.filterwarnings('ignore', category=FutureWarning)
-            return models.resnet18(pretrained=True)
+            warnings.filterwarnings("ignore", category=FutureWarning)
+            return factory(pretrained=True)
 
 
-def _get_output_path():
-    """
-    Determine the output path for the saved model.
-    
-    Returns:
-        str: Normalized path to the output file.
-    """
+def _default_output(arch: str) -> str:
+    """Default ``.pth`` path in the repository root."""
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    output_path = os.path.join(script_dir, "..", "resnet18_full.pth")
-    return os.path.normpath(output_path)
+    return os.path.normpath(os.path.join(script_dir, "..", f"{arch}_full.pth"))
 
 
-def _ensure_output_directory(output_path):
-    """
-    Ensure the output directory exists, creating it if necessary.
-    
-    Args:
-        output_path: Path to the output file.
-    """
-    output_dir = os.path.dirname(output_path)
-    if output_dir and not os.path.exists(output_dir):
-        os.makedirs(output_dir, exist_ok=True)
-
-
-def _print_model_info(output_path):
-    """
-    Print information about the saved model.
-    
-    Args:
-        output_path: Path to the saved model file.
-    """
-    file_size = os.path.getsize(output_path)
-    size_mb = file_size / (1024 * 1024)
-    
+def _print_model_info(output_path: str, arch: str, parameters: int) -> None:
+    """Print a short summary of the saved model."""
+    size_mb = os.path.getsize(output_path) / (1024 * 1024)
     print("\nModel saved successfully!")
     print(f"File: {output_path}")
     print(f"Size: {size_mb:.1f} MB")
-    print("Architecture: ResNet-18 (18 layers)")
-    print("Parameters: ~11.7 million")
+    print(f"Architecture: {arch}")
+    print(f"Parameters: {parameters / 1e6:.1f} million")
     print("Input: 224x224 RGB images")
     print("Output: 1000 ImageNet classes")
 
 
-def main():
-    """Main entry point for the script."""
+def _export_onnx(model, onnx_path: str) -> None:
+    """Export ``model`` to ONNX with a dynamic batch dimension."""
+    print(f"Exporting ONNX model to {onnx_path} ...")
+    dummy = torch.randn(1, 3, 224, 224)
+    torch.onnx.export(
+        model,
+        dummy,
+        onnx_path,
+        input_names=["input"],
+        output_names=["logits"],
+        dynamic_axes={"input": {0: "batch"}, "logits": {0: "batch"}},
+        opset_version=17,
+    )
+    print(f"ONNX model saved: {onnx_path}")
+
+
+def generate_model(arch: str = DEFAULT_ARCH, output_path=None, export_onnx: bool = False) -> str:
+    """Download a pre-trained model and save it for packaging demos.
+
+    Args:
+        arch: Architecture name from :data:`SUPPORTED_ARCHS`.
+        output_path: Destination ``.pth`` path. Defaults to the repo root.
+        export_onnx: Also write a sibling ``.onnx`` file.
+
+    Returns:
+        Path to the saved ``.pth`` file.
+
+    Raises:
+        RuntimeError: If the download or save fails.
+    """
+    output_path = output_path or _default_output(arch)
     try:
-        generate_resnet18_model()
-        return 0
-    except Exception:
+        print(f"Generating pre-trained {arch} model...")
+        print("Downloading weights from PyTorch Hub (cached after the first run)...")
+        model = _load_pretrained(arch)
+        model.eval()
+
+        output_dir = os.path.dirname(os.path.abspath(output_path))
+        os.makedirs(output_dir, exist_ok=True)
+
+        torch.save(model, output_path)
+        if not os.path.exists(output_path):
+            raise RuntimeError(f"Failed to save model to {output_path}")
+
+        _print_model_info(
+            output_path, arch, sum(p.numel() for p in model.parameters())
+        )
+
+        if export_onnx:
+            _export_onnx(model, os.path.splitext(output_path)[0] + ".onnx")
+
+        return output_path
+    except Exception as exc:
+        raise RuntimeError(f"Failed to generate {arch} model: {exc}") from exc
+
+
+def main(argv=None) -> int:
+    """Entry point for ``python models/gen_real_model.py``."""
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument(
+        "--arch", choices=SUPPORTED_ARCHS, default=DEFAULT_ARCH, help="Architecture to download"
+    )
+    parser.add_argument("--output", "-o", help="Destination .pth path")
+    parser.add_argument(
+        "--onnx", action="store_true", help="Also export the model to ONNX"
+    )
+    args = parser.parse_args(argv)
+
+    try:
+        generate_model(args.arch, args.output, export_onnx=args.onnx)
+    except RuntimeError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
         return 1
+    return 0
 
 
 if __name__ == "__main__":

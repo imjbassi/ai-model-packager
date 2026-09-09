@@ -10,8 +10,6 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
 parts/
 sdist/
 var/
@@ -21,9 +19,20 @@ wheels/
 *.egg
 MANIFEST
 
-# PyTorch models
+# Test / coverage artifacts
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Model files (generated locally, never committed)
 *.pth
 *.pt
+*.h5
+*.keras
+*.onnx
+*.joblib
+*.pkl
 
 # Virtual environments
 env/
@@ -43,17 +52,11 @@ venv.bak/
 .DS_Store
 Thumbs.db
 
-# Docker
-.dockerignore
-
 # Logs
 *.log
 
-# Test files
+# Generated artifacts
 sample.jpg
-test_*.py
-
-# Package files
+build_context/
 *.zip
 *_package/
-my_ai_model*/
