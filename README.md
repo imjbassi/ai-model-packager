@@ -4,181 +4,185 @@
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-## Overview
+## Abstract
 
-This repository contains the **AI Model Packaging Library**, developed as part of the **Capstone Project (Milestone 5) for the Master of Science in Software Engineering** at **Grand Canyon University (GCU)**.
+The AI Model Packaging Library is a command-line utility that automates the packaging of trained machine learning models into deployable Docker container images. Where a container runtime is unavailable, the same command produces an equivalent self-contained Python package. The tool was developed as the capstone project (Milestone 5) for the Master of Science in Software Engineering at Grand Canyon University.
 
-The project delivers a **command-line interface (CLI) tool** that automates the process of packaging machine learning models into deployable **Docker containers** — eliminating the need for manual containerization and DevOps expertise. When Docker is unavailable, the same command produces a portable Python package instead.
+## Table of Contents
+
+1. [Problem Statement](#1-problem-statement)
+2. [Scope and Capabilities](#2-scope-and-capabilities)
+3. [System Architecture](#3-system-architecture)
+4. [Installation](#4-installation)
+5. [Usage](#5-usage)
+6. [Command Reference](#6-command-reference)
+7. [Representative Output](#7-representative-output)
+8. [Testing and Continuous Integration](#8-testing-and-continuous-integration)
+9. [Security Considerations](#9-security-considerations)
+10. [Troubleshooting](#10-troubleshooting)
+11. [Limitations and Future Work](#11-limitations-and-future-work)
+12. [References](#12-references)
+13. [Project Information](#13-project-information)
 
 ---
 
-## Demo
+## 1. Problem Statement
+
+The deployment of trained models into production remains a recurring source of friction in machine learning workflows. Practitioners are conventionally required to author a Dockerfile by hand, reconcile framework-specific dependencies, integrate the model with an inference entry point, and possess working knowledge of container tooling and DevOps practice. These requirements fall outside the competency ordinarily expected of a data scientist and constitute a barrier to reproducible deployment.
+
+This project addresses that gap by reducing the packaging process to a single command that accepts a trained model and emits a deployable artifact.
+
+### Demonstration
 
 ![AI Model Packager in action](assets/demo.gif)
 
-*One command turns a trained model into a deployable artifact. When Docker isn't available, the tool automatically falls back to a portable Python package. ([Watch the MP4](assets/demo.mp4))*
+*A single command converts a trained model into a deployable artifact. Where Docker is unavailable, the tool falls back automatically to a portable Python package. A screen recording is also available in [MP4 format](assets/demo.mp4).*
 
 ---
 
-## Project Purpose
+## 2. Scope and Capabilities
 
-The AI Model Packaging Library addresses a **common challenge in machine learning workflows**: deploying trained models into production.
+The library provides the following capabilities:
 
-Traditionally, this requires:
+| Capability | Description |
+| --- | --- |
+| Format detection | The serialization format is inferred from the file extension across four frameworks. |
+| Dependency resolution | Only the dependencies required by the detected framework are installed, so a PyTorch image does not carry TensorFlow. |
+| Container generation | The Dockerfile, requirements manifest, build context, and image are produced without user intervention. |
+| Image hardening | Images use a pinned slim base image, an unprivileged runtime user, and a generated `.dockerignore`. |
+| Build isolation | The build context is assembled in a temporary directory, preventing artifacts from one run from contaminating the next. |
+| Container-free fallback | A self-contained Python package is produced with `run.py`, `run.sh`, and `run.bat` launchers. |
+| Cross-platform builds | A target architecture may be specified through `--platform`. |
+| Machine-readable output | Predictions may be emitted as JSON for consumption by downstream tooling. |
+| Deterministic exit codes | `0` denotes success, `1` failure, and `130` user cancellation. |
+| Verification | An automated test suite executes under continuous integration on Python 3.9, 3.11, and 3.12. |
 
-* Manual creation of Dockerfiles
-* Dependency management for different frameworks
-* Model and inference script integration
-* Knowledge of Docker, containerization, and DevOps pipelines
+### 2.1 Supported Model Formats
 
-This tool solves those problems by offering a **single command** that packages any supported ML model into a fully deployable artifact.
-
----
-
-## Key Features
-
-* **Model auto-detection** across four formats — PyTorch, TensorFlow/Keras, ONNX, and scikit-learn
-* **Per-framework dependency resolution** — a PyTorch image never ships TensorFlow, keeping images as small as the model requires
-* **Automated Dockerization** — generates the Dockerfile, requirements, build context, and image
-* **Hardened images** — pinned slim base image, non-root runtime user, and a generated `.dockerignore`
-* **Isolated builds** — the build context is assembled in a temporary directory, so no stale files leak between runs (use `--keep-context` to inspect it)
-* **Docker-free fallback** — produces a self-contained Python package with `run.py`, `run.sh`, and `run.bat` launchers
-* **Cross-platform builds** — `--platform linux/amd64` for building images for a different architecture
-* **Machine-readable output** — `--json` predictions for downstream tooling
-* **Meaningful exit codes** — `0` success, `1` failure, `130` user cancellation
-* **Tested** — a pytest suite plus CI across Python 3.9, 3.11 and 3.12
-
-### Supported Formats
-
-| Framework | Extensions | Container dependencies |
+| Framework | Extensions | Dependencies installed |
 | --- | --- | --- |
 | PyTorch | `.pth`, `.pt` | `torch`, `torchvision` |
 | TensorFlow / Keras | `.h5`, `.keras` | `tensorflow` |
 | ONNX | `.onnx` | `onnxruntime` |
 | scikit-learn / joblib | `.joblib`, `.pkl` | `scikit-learn`, `joblib` |
 
+Support for an additional framework requires one entry in `formats.py` and one corresponding branch in `model_loader.py`.
+
 ---
 
-## Repository Structure
+## 3. System Architecture
+
+### 3.1 Module Organization
 
 ```
 ai-model-packager/
-├── cli.py                  # Main CLI entry point
-├── formats.py              # Format registry: extensions -> framework -> dependencies
-├── docker_packager.py      # Build-context assembly and Docker image build
-├── package_python.py       # Portable Python-package fallback (no Docker)
+├── cli.py                  # Command-line entry point and mode selection
+├── formats.py              # Format registry: extension → framework → dependencies
+├── docker_packager.py      # Build-context assembly and image construction
+├── package_python.py       # Portable Python-package fallback
 ├── model_loader.py         # Framework-agnostic model loading
-├── infer.py                # Inference script (runs in the container or locally)
+├── infer.py                # Inference pipeline and prediction reporting
 ├── final_demo.py           # Read-only project walkthrough
 ├── models/
-│   └── gen_real_model.py   # Generates a real pretrained model (+ optional ONNX export)
-├── tests/                  # pytest suite
+│   └── gen_real_model.py   # Generation of a pretrained demonstration model
+├── tests/                  # Automated test suite
 ├── .github/workflows/ci.yml
-├── assets/                 # Demo GIF and MP4
+├── assets/                 # Demonstration media
 ├── pyproject.toml          # Packaging metadata and optional extras
-├── requirements.txt        # Local development dependencies
-├── LICENSE                 # MIT License
-└── README.md               # This file
+├── requirements.txt        # Development dependencies
+├── CHANGELOG.md
+├── LICENSE
+└── README.md
 ```
+
+### 3.2 Processing Pipeline
+
+1. The model format is detected from the file extension by `formats.py`.
+2. The dependency set corresponding to the detected framework is resolved.
+3. A build context is assembled, comprising the Dockerfile, the requirements manifest, the model, and the inference scripts.
+4. The container image is constructed and configured to execute as an unprivileged user.
+5. The resulting image is verified; where Docker is unavailable, a portable Python package is produced instead.
+
+`formats.py` serves as the single authoritative registry consulted by the loader, the packager, and the command-line interface, thereby preventing divergence between the formats each component accepts.
 
 ---
 
-## Installation & Setup
+## 4. Installation
 
-### Prerequisites
+### 4.1 Prerequisites
 
-* Python 3.9 or higher
-* Docker Desktop or Docker Engine (optional — without it the tool falls back to Python packaging)
-* Git (for cloning the repository)
+- Python 3.9 or later
+- Docker Desktop or Docker Engine (optional; absent a container runtime, the tool falls back to Python packaging)
+- Git
 
-### 1. Clone the repository
+### 4.2 Repository Acquisition
 
 ```bash
 git clone https://github.com/imjbassi/ai-model-packager.git
 cd ai-model-packager
 ```
 
-### 2. Install dependencies
+### 4.3 Dependency Installation
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Or install the CLI itself, pulling in only the framework you need:
+Alternatively, the tool may be installed with only the framework required for a given workflow:
 
 ```bash
 pip install -e ".[pytorch]"    # or .[tensorflow] / .[onnx] / .[sklearn] / .[dev]
 ```
 
-Installing the package also provides an `ai-model-packager` command equivalent to `python cli.py`.
+Installation additionally provides an `ai-model-packager` console command equivalent to `python cli.py`.
 
-### 3. Generate a sample model
+### 4.4 Generation of a Demonstration Model
 
 ```bash
 python models/gen_real_model.py
 ```
 
-This creates `resnet18_full.pth` in the project root. Add `--onnx` to also export `resnet18_full.onnx`, or `--arch mobilenet_v2` for a smaller model.
+This produces `resnet18_full.pth` in the repository root. The `--onnx` option additionally exports `resnet18_full.onnx`, and `--arch mobilenet_v2` selects a smaller architecture.
 
-### 4. Package the model into a Docker image
+---
+
+## 5. Usage
+
+### 5.1 Packaging a Model
 
 ```bash
 python cli.py --input resnet18_full.pth --image my_ai_model:1.0
 ```
 
-### 5. Run inference inside the container
+### 5.2 Executing Inference Within the Container
 
 ```bash
 docker run --rm my_ai_model:1.0
 ```
 
-To run against your own image, mount it and override the default arguments:
+An alternative input may be supplied by mounting a directory and overriding the default arguments:
 
 ```bash
 docker run --rm -v "$PWD:/data" my_ai_model:1.0 --test-input /data/your_image.jpg --top-k 3
 ```
 
----
-
-## Usage
-
-### Basic command
+### 5.3 Representative Invocations
 
 ```bash
-python cli.py --input <model_file> --image <image_name:tag>
-```
-
-### Arguments
-
-| Argument | Description |
-| --- | --- |
-| `--input`, `-i` | Path to the model file (see supported formats above) |
-| `--image`, `-t` | Docker image name and tag, e.g. `my_model:1.0` (also names the Python package) |
-| `--mode` | `auto` (default): Docker when available, else Python package. `docker`: require Docker. `python`: skip Docker |
-| `--output-dir`, `-o` | Where to write the Python package (default: `.`) |
-| `--python-version` | Python version for the container base image (default: `3.11`) |
-| `--platform` | Target platform for the build, e.g. `linux/amd64` |
-| `--no-cache` | Build the image without the Docker layer cache |
-| `--keep-context` | Keep the generated `build_context/` directory for inspection |
-| `--version` | Print the tool version |
-
-### Examples
-
-```bash
-# Standard Docker build
+# Standard container build
 python cli.py -i resnet18_full.pth -t resnet_inference:latest
 
-# ONNX model, built for x86 from an ARM machine
+# ONNX model targeting x86 from an ARM host
 python cli.py -i model.onnx -t onnx_model:1.0 --platform linux/amd64
 
-# No Docker: produce a portable package under dist/
+# Container-free packaging, written to dist/
 python cli.py -i model.h5 -t tf_model:1.0 --mode python -o dist/
 
-# Inspect exactly what would be built
+# Retention of the generated build context for inspection
 python cli.py -i model.pth -t my_model:1.0 --keep-context
 ```
 
-### Running inference directly
+### 5.4 Direct Inference
 
 ```bash
 python infer.py --model resnet18_full.pth --test-input sample.jpg --top-k 3
@@ -187,9 +191,37 @@ python infer.py --model resnet18_full.pth --labels imagenet_classes.txt --json
 
 ---
 
-## Example Output
+## 6. Command Reference
 
-### Building a Docker image
+### 6.1 `cli.py`
+
+| Argument | Description |
+| --- | --- |
+| `--input`, `-i` | Path to the model file. Required. |
+| `--image`, `-t` | Docker image name and tag, for example `my_model:1.0`. Also determines the Python package name. Required. |
+| `--mode` | `auto` (default) selects Docker where available and the Python package otherwise; `docker` requires Docker; `python` bypasses Docker entirely. |
+| `--output-dir`, `-o` | Destination directory for the Python package. Default: `.` |
+| `--python-version` | Python version of the container base image. Default: `3.11` |
+| `--platform` | Target platform for the build, for example `linux/amd64`. |
+| `--no-cache` | Constructs the image without the Docker layer cache. |
+| `--keep-context` | Retains the generated `build_context/` directory. |
+| `--version` | Reports the tool version. |
+
+### 6.2 `infer.py`
+
+| Argument | Description |
+| --- | --- |
+| `--model` | Path to the model file. Required. |
+| `--test-input` | Path to an input image. Random input is used when omitted. |
+| `--labels` | Class-name file, supplied either as newline-delimited text or as a JSON array. |
+| `--top-k` | Number of predictions to report. Default: `5` |
+| `--json` | Emits predictions as JSON. |
+
+---
+
+## 7. Representative Output
+
+### 7.1 Image Construction
 
 ```
 Checking Docker daemon availability...
@@ -203,7 +235,7 @@ SUCCESS: built Docker image: my_ai_model:1.0
 VERIFIED: image my_ai_model:1.0 exists and is ready to use
 ```
 
-### Running inference
+### 7.2 Inference
 
 ```
 Processing image: sample.jpg
@@ -218,64 +250,52 @@ Top 5 predictions:
 
 ---
 
-## Testing
+## 8. Testing and Continuous Integration
 
 ```bash
 pip install -e ".[dev]"
 pytest
 ```
 
-The suite covers format detection, build-context generation, image-name validation, the Python-package fallback, prediction ranking, and CLI exit codes. Tests that need a framework (`torch`, `joblib`) skip automatically when it is not installed.
+The suite exercises format detection, build-context generation, image-name validation, the Python-package fallback, prediction ranking, and command-line exit codes. Tests requiring an optional framework are skipped automatically where that framework is not installed. The continuous integration workflow executes the suite on Python 3.9, 3.11, and 3.12, together with an end-to-end packaging job that runs without a container runtime.
 
 ---
 
-## Security Considerations
+## 9. Security Considerations
 
-* Generated images run as a **non-root user** (`appuser`, UID 10001)
-* Uses **Docker container isolation** to constrain the packaged model
-* All dependencies are installed from **trusted package sources** (PyPI)
-* Encourages use of **private container registries** for sensitive or proprietary models
-* **Note:** loading a PyTorch `.pth` file executes pickled code. Only package models from sources you trust — `model_loader.load_model()` accepts `weights_only=True` for state-dict-only files
-* **Recommendation:** scan images with Docker Scout or Trivy before deployment
-
----
-
-## Troubleshooting
-
-### Docker build fails
-
-* Ensure Docker is running: `docker ps`
-* Check Docker daemon logs for errors
-* Verify sufficient disk space for image layers
-* Retry with `--no-cache` if a cached layer is stale
-
-### Model file not found
-
-* Confirm the model file path is correct
-* Ensure the model was generated successfully using `models/gen_real_model.py`
-
-### Unsupported model format
-
-* Check the extension against the supported-formats table above
-* Registering a new framework means adding one entry to `formats.py` and one branch to `model_loader.py`
-
-### Permission errors
-
-* On Linux/macOS, you may need to run Docker commands with `sudo` or add your user to the `docker` group
+- Generated images execute as an unprivileged user (`appuser`, UID 10001) rather than as root.
+- Container isolation constrains the packaged model at runtime.
+- Dependencies are installed exclusively from the Python Package Index.
+- The use of private container registries is recommended for proprietary or sensitive models.
+- Deserialization of a PyTorch `.pth` file executes arbitrary pickled code. Models should therefore be packaged only from trusted sources; `model_loader.load_model()` accepts `weights_only=True` for artifacts containing only a state dictionary.
+- Images should be scanned with a vulnerability scanner such as Docker Scout or Trivy prior to deployment.
 
 ---
 
-## Future Enhancements
+## 10. Troubleshooting
 
-* Support for additional frameworks (XGBoost, LightGBM, safetensors)
-* Integration with cloud deployment platforms (AWS, Azure, GCP)
-* Automated model versioning and registry management
-* REST API wrapper generation for containerized models
-* Multi-architecture manifests via `docker buildx`
+| Symptom | Recommended action |
+| --- | --- |
+| The image build fails | Confirm that the daemon is running with `docker ps`, inspect the daemon logs, verify available disk space, and retry with `--no-cache` where a cached layer may be stale. |
+| The model file is not found | Verify the supplied path and confirm that the model was generated successfully by `models/gen_real_model.py`. |
+| The model format is unsupported | Compare the file extension against Section 2.1. Additional frameworks may be registered in `formats.py`. |
+| Permission errors occur | On Linux and macOS, either invoke Docker with `sudo` or add the current user to the `docker` group. |
 
 ---
 
-## References
+## 11. Limitations and Future Work
+
+The present implementation targets image-classification workloads and assumes a 224×224 RGB input convention for its bundled sample inference path. The following extensions are identified for future work:
+
+- Support for additional frameworks, including XGBoost, LightGBM, and safetensors
+- Integration with managed cloud deployment platforms (AWS, Azure, GCP)
+- Automated model versioning and container registry management
+- Generation of a REST API wrapper around the containerized model
+- Multi-architecture image manifests by way of `docker buildx`
+
+---
+
+## 12. References
 
 Amazon Web Services. (2024). *Amazon Elastic Container Service documentation*. https://docs.aws.amazon.com/AmazonECS/latest/developerguide/Welcome.html
 
@@ -289,39 +309,37 @@ Red Hat. (2023). *Introduction to containers, Kubernetes, and Red Hat OpenShift*
 
 ---
 
-## Academic Information
+## 13. Project Information
 
-This project was developed as part of the **Master's Capstone in Software Engineering** at **Grand Canyon University**. It demonstrates proficiency in **software engineering principles, DevOps integration, and applied machine learning deployment**.
+### 13.1 Academic Context
 
-**Author**: Imjot Bassi
-**Institution**: Grand Canyon University
-**Program**: Master of Science in Software Engineering
-**Project**: Capstone Milestone 5
+This project was developed as the capstone requirement for the Master of Science in Software Engineering at Grand Canyon University. It demonstrates the application of software engineering principles, DevOps integration, and applied machine learning deployment.
 
----
+| Field | Value |
+| --- | --- |
+| Author | Imjot Bassi |
+| Institution | Grand Canyon University |
+| Program | Master of Science in Software Engineering |
+| Project | Capstone Milestone 5 |
 
-## Contributing
+### 13.2 Contributing
 
-Contributions are welcome! Please follow these guidelines:
+Contributions are welcomed. The following procedure is requested:
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/your-feature`)
-3. Add or update tests and make sure `pytest` passes
-4. Commit your changes (`git commit -m 'Add new feature'`)
-5. Push to the branch (`git push origin feature/your-feature`)
-6. Open a Pull Request
+1. Fork the repository.
+2. Create a feature branch (`git checkout -b feature/your-feature`).
+3. Add or update the corresponding tests and confirm that `pytest` passes.
+4. Commit the changes (`git commit -m 'Add new feature'`).
+5. Push the branch (`git push origin feature/your-feature`).
+6. Open a pull request.
 
----
+A record of changes between releases is maintained in [CHANGELOG.md](CHANGELOG.md).
 
-## License
+### 13.3 License
 
-This project is released under the **MIT License**. See the [LICENSE](LICENSE) file for full details.
+This project is released under the MIT License. The full text is provided in [LICENSE](LICENSE).
 
----
+### 13.4 Contact
 
-## Contact
-
-For questions, feedback, or collaboration opportunities:
-
-* **GitHub**: [@imjbassi](https://github.com/imjbassi)
-* **Repository**: [ai-model-packager](https://github.com/imjbassi/ai-model-packager)
+- GitHub: [@imjbassi](https://github.com/imjbassi)
+- Repository: [ai-model-packager](https://github.com/imjbassi/ai-model-packager)
