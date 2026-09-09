@@ -317,7 +317,7 @@ This project was developed as the capstone requirement for the Master of Science
 
 | Field | Value |
 | --- | --- |
-| Author | Imjot Bassi |
+| Author | Jaiveer Bassi |
 | Institution | Grand Canyon University |
 | Program | Master of Science in Software Engineering |
 | Project | Capstone Milestone 5 |
